@@ -22,6 +22,28 @@ void generate_input_samples(const int* num, int len,int N, int* signal)
     }
 }
 
+float calculate_mean(int* signal, int N){
+
+    float sum = 0;
+    int i;
+
+    for (i=0; i<N; i++){
+        sum += signal[i];
+    }
+
+    return sum/(float)N;
+}
+
+void zero_mean(const int* signal, float mean, int N, float* zero_mu_signal){
+
+    int i;
+
+    for (i=0; i<N; i++){
+        zero_mu_signal[i] = (float)signal[i] - mean;
+    }
+
+}
+
 void calculate_sampling_frequency(const int* num1, const int* num2, int len, int N)
 {
     int L = len-N;
@@ -59,6 +81,17 @@ int main(void)
 
     int input_signal_1[STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT];
     generate_input_samples(student_number_1,STUDENT_NUMBER_LENGTH,INPUT_SIGNAL_REPEAT,input_signal_1);
+
+    float mean = calculate_mean(input_signal_1, STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT);
+
+    float zero_mu_signal_1[STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT];
+    zero_mean(input_signal_1, mean, STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT, zero_mu_signal_1);
+
+
+
+
+    int input_signal_2[STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT];
+    generate_input_samples(student_number_2, STUDENT_NUMBER_LENGTH,INPUT_SIGNAL_REPEAT, input_signal_2);
 
     calculate_sampling_frequency(student_number_1,student_number_2,STUDENT_NUMBER_LENGTH,4);
 
