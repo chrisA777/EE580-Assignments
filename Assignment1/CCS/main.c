@@ -13,6 +13,15 @@
 const int student_number_1[STUDENT_NUMBER_LENGTH] = {2, 0, 2, 0, 3, 7, 6, 9, 6};
 const int student_number_2[STUDENT_NUMBER_LENGTH] = {2, 0, 2, 0, 3, 2, 1, 7, 5};
 
+
+/* Generates array of {num} array of length {len} repeated {N} times and assigns it to {signal}.
+ *
+ * Parameters:
+ * - num : Array of integers to be repeated
+ * - len : Length of num array
+ * - N : Number of times to repeat num
+ * - signal : Output signal of repeated num
+ */
 void generate_input_samples(const int *num, int len, int N, int *signal)
 {
     int i = 0;
@@ -22,6 +31,12 @@ void generate_input_samples(const int *num, int len, int N, int *signal)
     }
 }
 
+/* Calculates mean of integer array.
+ *
+ * Parameters:
+ * - signal : signal to calculate mean of
+ * - N : length of signal
+ */
 float calculate_mean(int *signal, int N)
 {
 
@@ -38,17 +53,32 @@ float calculate_mean(int *signal, int N)
     return result;
 }
 
+/* Subtracts mean from signal.
+ *
+ * Parameters:
+ * - signal : signal to subtract from
+ * - mean : mean to subtract
+ * - N : length of signal
+ * - zero_mu_signal : output array pointer of resulting zero mean signal
+ */
 void zero_mean(const int *signal, float mean, int N, float *zero_mu_signal)
 {
-
     int i;
-
     for (i = 0; i < N; i++)
     {
         zero_mu_signal[i] = (float)signal[i] - mean;
     }
 }
 
+/* FIR Filters signals.
+ *
+ * Parameters:
+ * - x : input signal array
+ * - y : output signal array
+ * - N : length of signals
+ * - b : FIR numerator filter weights array pointer
+ * - M : length of number filter weights array
+ */
 void fir_filter(const float *x, float *y, int N, const float *b, int M)
 {
     int n;
@@ -67,6 +97,13 @@ void fir_filter(const float *x, float *y, int N, const float *b, int M)
     }
 }
 
+/* Writes signal to file.
+ *
+ * Parameters:
+ * - filename : Name of file to write signal to
+ * - signal : signal array pointer
+ * - length : length of signal
+ */
 void write_to_file(const char *filename, const float *signal, int length)
 {
     FILE *file = fopen(filename, "w");
@@ -87,7 +124,7 @@ void write_to_file(const char *filename, const float *signal, int length)
 
 int main(void)
 {
-
+    // Initialise signals
     int input_signal_1[SIGNAL_LENGTH];
     int input_signal_2[SIGNAL_LENGTH];
 
@@ -95,7 +132,7 @@ int main(void)
     generate_input_samples(student_number_1, STUDENT_NUMBER_LENGTH, INPUT_SIGNAL_REPEAT, input_signal_1);
     generate_input_samples(student_number_2, STUDENT_NUMBER_LENGTH, INPUT_SIGNAL_REPEAT, input_signal_2);
 
-    // Calc mean
+    // Calculate mean
     float mean1 = calculate_mean(input_signal_1, SIGNAL_LENGTH);
     float mean2 = calculate_mean(input_signal_2, SIGNAL_LENGTH);
 
@@ -105,14 +142,14 @@ int main(void)
     zero_mean(input_signal_1, mean1, SIGNAL_LENGTH, zero_mu_signal_1);
     zero_mean(input_signal_2, mean2, SIGNAL_LENGTH, zero_mu_signal_2);
 
-    // apply filter
+    // Filter signals
     float filtered_signal_1[SIGNAL_LENGTH];
     float filtered_signal_2[SIGNAL_LENGTH];
 
     fir_filter(zero_mu_signal_1, filtered_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1);
     fir_filter(zero_mu_signal_2, filtered_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2);
 
-    // write 2 file
+    // Write to file
     write_to_file("filtered_signal_1.txt", filtered_signal_1, SIGNAL_LENGTH);
     write_to_file("filtered_signal_2.txt", filtered_signal_2, SIGNAL_LENGTH);
 
