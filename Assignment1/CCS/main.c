@@ -1,5 +1,3 @@
-
-
 /**
  * main.c
  */
@@ -53,10 +51,13 @@ void zero_mean(const int *signal, float mean, int N, float *zero_mu_signal)
 
 void fir_filter(const float *x, float *y, int N, const float *b, int M)
 {
-    for (int n = 0; n < N; n++)
+    int n;
+    for (n = 0; n < N; n++)
     {
         y[n] = 0.0f;
-        for (int k = 0; k < M; k++)
+
+        int k;
+        for  (k = 0; k < M; k++)
         {
             if (n >= k)
             {
@@ -75,7 +76,8 @@ void write_to_file(const char *filename, const float *signal, int length)
         return;
     }
 
-    for (int i = 0; i < length; i++)
+    int i;
+    for (i = 0; i < length; i++)
     {
         fprintf(file, "%f\n", signal[i]);
     }
