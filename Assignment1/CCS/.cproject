@@ -52,7 +52,7 @@
 								<inputType id="com.ti.ccstudio.buildDefinitions.C6000_7.3.compiler.inputType__ASM2_SRCS.461210778" name="Assembly Sources" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.compiler.inputType__ASM2_SRCS"/>
 							</tool>
 							<tool id="com.ti.ccstudio.buildDefinitions.C6000_7.3.exe.linkerDebug.751293126" name="C6000 Linker" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.exe.linkerDebug">
-								<option id="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.STACK_SIZE.1807027253" name="Set C system stack size (--stack_size, -stack)" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.STACK_SIZE" value="0xE10" valueType="string"/>
+								<option id="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.STACK_SIZE.1807027253" name="Set C system stack size (--stack_size, -stack)" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.STACK_SIZE" value="0x10000" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.HEAP_SIZE.1229566002" name="Heap size for C/C++ dynamic memory allocation (--heap_size, -heap)" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.HEAP_SIZE" value="0x800" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.OUTPUT_FILE.1609019403" name="Specify output file name (--output_file, -o)" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.OUTPUT_FILE" value="${ProjName}.out" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.MAP_FILE.2062726997" name="Input and output sections listed into &lt;file&gt; (--map_file, -m)" superClass="com.ti.ccstudio.buildDefinitions.C6000_7.3.linkerID.MAP_FILE" value="${ProjName}.map" valueType="string"/>

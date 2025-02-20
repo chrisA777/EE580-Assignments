@@ -51,55 +51,48 @@ title("FFT of X_2")
 
 %% Filter Signals and plot results
 
-y_1 = filter(w_1,1,x_1);
-
-figure;
-hold on;
-stem(x_1(20:47))
-stem(y_1(20:47))
-
-legend("x_1", "y_1")
-title('3 Cycles of filtered signal, y_1')
-xlabel('n')
-
-% Plot FFTs
-Y_1=fft(y_1,1024);
-X_1=fft(x_1,1024);
-
-figure
-L=1024;
-hold on;
-plot(fs/L*(-L/2:L/2-1),abs(fftshift(X_1)),"LineStyle","--")
-plot(fs/L*(-L/2:L/2-1),abs(fftshift(Y_1)))
-
-legend("FFT of X_1", "FFT of Y_1")
-title("FFT of Y_1")
+% y_1 = filter(w_1,1,x_1);
+% 
+% figure;
+% hold on;
+% stem(y_1(20:47))
+% stem(x_1(20:47))
+% 
+% title('3 Cycles of x_1')
+% xlabel('n')
+% 
+% % Plot FFTs
+% Y_1=fft(y_1,1024);
+% X_2=fft(x_2,1024);
+% 
+% figure
+% L=1024;
+% hold on;
+% plot(fs/L*(-L/2:L/2-1),abs(fftshift(Y_1)),"LineWidth",3)
+% plot(fs/L*(-L/2:L/2-1),abs(fftshift(X_1)),"LineStyle","--")
+% 
+% title("FFT of Y_1")
 
 y_2 = filter(w_2,1,x_2);
 
 figure;
 hold on;
-stem(x_2(20:47))
 stem(y_2(20:47))
+stem(x_2(20:47))
 
-legend("x_1", "y_1")
-title('3 Cycles of filtered signal, y_2')
+title('3 Cycles of filtered x_2')
 xlabel('n')
 
-legend("FFT of X_2", "FFT of Y_2")
-
 % Plot FFTs
-Y_2=fft(y_2,1024);
+Y_1=fft(y_1,1024);
 X_2=fft(x_2,1024);
 
 figure
 L=1024;
 hold on;
+plot(fs/L*(-L/2:L/2-1),abs(fftshift(Y_1)),"LineWidth",3)
+plot(fs/L*(-L/2:L/2-1),abs(fftshift(X_1)),"LineStyle","--")
 
-plot(fs/L*(-L/2:L/2-1),abs(fftshift(X_2)),"LineStyle","--")
-plot(fs/L*(-L/2:L/2-1),abs(fftshift(Y_2)))
-
-legend("FFT of X_2", "FFT of Y_2")
-title("FFT of Y_2")
+title("FFT of Y_1")
 
 

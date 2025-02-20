@@ -4,97 +4,115 @@
  * main.c
  */
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "data.h"
 
-# define STUDENT_NUMBER_LENGTH 9
-# define INPUT_SIGNAL_REPEAT 100
-# define CUT 4
+#define STUDENT_NUMBER_LENGTH 9
+#define INPUT_SIGNAL_REPEAT 100
+#define SIGNAL_LENGTH (STUDENT_NUMBER_LENGTH * INPUT_SIGNAL_REPEAT)
 
-const int student_number_1[STUDENT_NUMBER_LENGTH] = {2,0,2,0,3,7,6,9,6};
-const int student_number_2[STUDENT_NUMBER_LENGTH] = {2,0,2,0,3,2,1,7,5};
+const int student_number_1[STUDENT_NUMBER_LENGTH] = {2, 0, 2, 0, 3, 7, 6, 9, 6};
+const int student_number_2[STUDENT_NUMBER_LENGTH] = {2, 0, 2, 0, 3, 2, 1, 7, 5};
 
-
-void generate_input_samples(const int* num, int len,int N, int* signal)
+void generate_input_samples(const int *num, int len, int N, int *signal)
 {
     int i = 0;
-    for(i=0;i<N*len;i++)
+    for (i = 0; i < N * len; i++)
     {
-        signal[i] = num[i%len];
+        signal[i] = num[i % len];
     }
 }
 
-float calculate_mean(int* signal, int N){
+float calculate_mean(int *signal, int N)
+{
 
-    float sum = 0;
+    float result, sum = 0;
     int i;
 
-    for (i=0; i<N; i++){
+    for (i = 0; i < N; i++)
+    {
         sum += signal[i];
     }
 
-    return sum/(float)N;
+    result = sum / N;
+    i = 0;
+    return result;
 }
 
-void zero_mean(const int* signal, float mean, int N, float* zero_mu_signal){
+void zero_mean(const int *signal, float mean, int N, float *zero_mu_signal)
+{
 
     int i;
 
-    for (i=0; i<N; i++){
+    for (i = 0; i < N; i++)
+    {
         zero_mu_signal[i] = (float)signal[i] - mean;
     }
-
 }
 
-void calculate_sampling_frequency(const int* num1, const int* num2, int len, int N)
+void fir_filter(const float *x, float *y, int N, const float *b, int M)
 {
-    int L = len-N;
-//    int* arr1 = (int*)malloc(N);
-//    int* arr2 = (int*)malloc(N);
-    int arr1[CUT];
-    int arr2[CUT];
-
-    //Get last N numbers in array
-    int i = 0;
-    for (i=L;i<len;i++)
+    for (int n = 0; n < N; n++)
     {
-        arr1[i-L] = num1[i];
-        arr2[i-L] = num2[i];
+        y[n] = 0.0f;
+        for (int k = 0; k < M; k++)
+        {
+            if (n >= k)
+            {
+                y[n] += b[k] * x[n - k];
+            }
+        }
+    }
+}
+
+void write_to_file(const char *filename, const float *signal, int length)
+{
+    FILE *file = fopen(filename, "w");
+    if (file == NULL)
+    {
+        printf("Error opening file %s\n", filename);
+        return;
     }
 
-    //
-    int n1 = 0;
-    int n2 = 0;
+    for (int i = 0; i < length; i++)
+    {
+        fprintf(file, "%f\n", signal[i]);
+    }
 
-    double test = pow(10.0,2.0);
-
-//    for (i=0;i<N;i++)
-//    {
-//        n1 += (int)pow(10, N-i+1)*arr1[i];
-//        n2 += (int)pow(10, N-i+1)*arr2[i];
-//    }
-
-    free(arr1);
-    free(arr2);
+    fclose(file);
 }
 
 int main(void)
 {
 
-    int input_signal_1[STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT];
-    generate_input_samples(student_number_1,STUDENT_NUMBER_LENGTH,INPUT_SIGNAL_REPEAT,input_signal_1);
+    int input_signal_1[SIGNAL_LENGTH];
+    int input_signal_2[SIGNAL_LENGTH];
 
-    float mean = calculate_mean(input_signal_1, STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT);
+    // Generate input signals from student numbers
+    generate_input_samples(student_number_1, STUDENT_NUMBER_LENGTH, INPUT_SIGNAL_REPEAT, input_signal_1);
+    generate_input_samples(student_number_2, STUDENT_NUMBER_LENGTH, INPUT_SIGNAL_REPEAT, input_signal_2);
 
-    float zero_mu_signal_1[STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT];
-    zero_mean(input_signal_1, mean, STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT, zero_mu_signal_1);
+    // Calc mean
+    float mean1 = calculate_mean(input_signal_1, SIGNAL_LENGTH);
+    float mean2 = calculate_mean(input_signal_2, SIGNAL_LENGTH);
 
+    // Zero mean signals
+    float zero_mu_signal_1[SIGNAL_LENGTH];
+    float zero_mu_signal_2[SIGNAL_LENGTH];
+    zero_mean(input_signal_1, mean1, SIGNAL_LENGTH, zero_mu_signal_1);
+    zero_mean(input_signal_2, mean2, SIGNAL_LENGTH, zero_mu_signal_2);
 
+    // apply filter
+    float filtered_signal_1[SIGNAL_LENGTH];
+    float filtered_signal_2[SIGNAL_LENGTH];
 
+    fir_filter(zero_mu_signal_1, filtered_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1);
+    fir_filter(zero_mu_signal_2, filtered_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2);
 
-    int input_signal_2[STUDENT_NUMBER_LENGTH*INPUT_SIGNAL_REPEAT];
-    generate_input_samples(student_number_2, STUDENT_NUMBER_LENGTH,INPUT_SIGNAL_REPEAT, input_signal_2);
+    // write 2 file
+    write_to_file("filtered_signal_1.txt", filtered_signal_1, SIGNAL_LENGTH);
+    write_to_file("filtered_signal_2.txt", filtered_signal_2, SIGNAL_LENGTH);
 
-    calculate_sampling_frequency(student_number_1,student_number_2,STUDENT_NUMBER_LENGTH,4);
-
-    free(input_signal_1);
-	return 0;
+    return 0;
 }
