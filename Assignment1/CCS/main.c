@@ -79,7 +79,7 @@ void zero_mean(const int *signal, int N, float *zero_mu_signal)
  * - M : length of b array
  * - y : output signal array of length => M+N-1
  */
-void conv(const float *x, int N, const float *b, int M, float *y)
+void conv(const float *x, int N, const float *b, int M, float *y, int verbose)
 {
     // Length of the output convolution result
     int conv_len = M+N-1;
@@ -91,6 +91,9 @@ void conv(const float *x, int N, const float *b, int M, float *y)
         y[n] = 0.0f;
 
         int k;
+        int first = 1;
+        if (verbose)
+            printf("\ny[%d] = ",n);
         // Iterate over second array coefficients
         for  (k = 0; k < M; k++)
         {
@@ -99,10 +102,19 @@ void conv(const float *x, int N, const float *b, int M, float *y)
             // - (n - k) < N ensures input signal length not exceeded
             if (n >= k && (n-k)<N)
             {
+                if (verbose)
+                {
+                    if (!first)
+                        printf("+ ");
+                    printf("(%.2f * %.2f) ",x[n-k],b[k]);
+                }
                 // Convolution accumulation
                 y[n] += b[k] * x[n - k];
+                first = 0;
             }
         }
+        if (verbose)
+            printf("= %.2f",y[n]);
     }
 }
 
@@ -149,11 +161,17 @@ int main(void)
     zero_mean(input_signal_1, SIGNAL_LENGTH, zero_mu_signal_1);
     zero_mean(input_signal_2, SIGNAL_LENGTH, zero_mu_signal_2);
 
+    // Test convolution
+    float test_signal_1[4] = {1,2,3,4};
+    float test_signal_2[4] = {5,6,7,8};
+    float test_output[7];
+    conv(test_signal_1, 4, test_signal_2, 4, test_output,1);
+
     // Filter signals
     float filtered_signal_1[SIGNAL_LENGTH+N_FIR_B_1-1];
     float filtered_signal_2[SIGNAL_LENGTH+N_FIR_B_2-1];
-    conv(zero_mu_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1, filtered_signal_1);
-    conv(zero_mu_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2, filtered_signal_2);
+    conv(zero_mu_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1, filtered_signal_1,0);
+    conv(zero_mu_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2, filtered_signal_2,0);
 
     // Write to file
     write_to_file("filtered_signal_1.txt", filtered_signal_1, SIGNAL_LENGTH+N_FIR_B_1-1);
