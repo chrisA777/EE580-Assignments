@@ -37,7 +37,7 @@ void generate_input_samples(const int *num, int len, int N, int *signal)
  * - signal : signal to calculate mean of
  * - N : length of signal
  */
-float calculate_mean(int *signal, int N)
+float calculate_mean(const int *signal, int N)
 {
 
     float result, sum = 0;
@@ -57,12 +57,12 @@ float calculate_mean(int *signal, int N)
  *
  * Parameters:
  * - signal : signal to subtract from
- * - mean : mean to subtract
  * - N : length of signal
  * - zero_mu_signal : output array pointer of resulting zero mean signal
  */
-void zero_mean(const int *signal, float mean, int N, float *zero_mu_signal)
+void zero_mean(const int *signal, int N, float *zero_mu_signal)
 {
+    float mean = calculate_mean(signal,N);
     int i;
     for (i = 0; i < N; i++)
     {
@@ -79,7 +79,7 @@ void zero_mean(const int *signal, float mean, int N, float *zero_mu_signal)
  * - M : length of b array
  * - y : output signal array of length M+N-1
  */
-void conv(const float *x, int N, const float *b, int M float *y)
+void conv(const float *x, int N, const float *b, int M, float *y)
 {
     int conv_len = M+N-1;
     int n;
@@ -133,26 +133,21 @@ int main(void)
     generate_input_samples(student_number_1, STUDENT_NUMBER_LENGTH, INPUT_SIGNAL_REPEAT, input_signal_1);
     generate_input_samples(student_number_2, STUDENT_NUMBER_LENGTH, INPUT_SIGNAL_REPEAT, input_signal_2);
 
-    // Calculate mean
-    float mean1 = calculate_mean(input_signal_1, SIGNAL_LENGTH);
-    float mean2 = calculate_mean(input_signal_2, SIGNAL_LENGTH);
-
     // Zero mean signals
     float zero_mu_signal_1[SIGNAL_LENGTH];
     float zero_mu_signal_2[SIGNAL_LENGTH];
-    zero_mean(input_signal_1, mean1, SIGNAL_LENGTH, zero_mu_signal_1);
-    zero_mean(input_signal_2, mean2, SIGNAL_LENGTH, zero_mu_signal_2);
+    zero_mean(input_signal_1, SIGNAL_LENGTH, zero_mu_signal_1);
+    zero_mean(input_signal_2, SIGNAL_LENGTH, zero_mu_signal_2);
 
     // Filter signals
     float filtered_signal_1[SIGNAL_LENGTH+N_FIR_B_1-1];
     float filtered_signal_2[SIGNAL_LENGTH+N_FIR_B_2-1];
-
     conv(zero_mu_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1, filtered_signal_1);
     conv(zero_mu_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2, filtered_signal_2);
 
     // Write to file
-    write_to_file("filtered_signal_1.txt", filtered_signal_1, SIGNAL_LENGTH);
-    write_to_file("filtered_signal_2.txt", filtered_signal_2, SIGNAL_LENGTH);
+    write_to_file("filtered_signal_1.txt", filtered_signal_1, SIGNAL_LENGTH+N_FIR_B_1-1);
+    write_to_file("filtered_signal_2.txt", filtered_signal_2, SIGNAL_LENGTH+N_FIR_B_2-1);
 
     return 0;
 }
