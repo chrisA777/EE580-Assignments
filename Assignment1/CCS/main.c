@@ -70,26 +70,27 @@ void zero_mean(const int *signal, float mean, int N, float *zero_mu_signal)
     }
 }
 
-/* FIR Filters signals.
+/* Convolves signal x with b.
  *
  * Parameters:
- * - x : input signal array
- * - y : output signal array
- * - N : length of signals
- * - b : FIR numerator filter weights array pointer
- * - M : length of number filter weights array
+ * - x : first input array
+ * - N : length of x array
+ * - b : second input array
+ * - M : length of b array
+ * - y : output signal array of length M+N-1
  */
-void fir_filter(const float *x, float *y, int N, const float *b, int M)
+void conv(const float *x, int N, const float *b, int M float *y)
 {
+    int conv_len = M+N-1;
     int n;
-    for (n = 0; n < N; n++)
+    for (n = 0; n < conv_len; n++)
     {
         y[n] = 0.0f;
 
         int k;
         for  (k = 0; k < M; k++)
         {
-            if (n >= k)
+            if (n >= k && (n-k)<N)
             {
                 y[n] += b[k] * x[n - k];
             }
@@ -143,11 +144,11 @@ int main(void)
     zero_mean(input_signal_2, mean2, SIGNAL_LENGTH, zero_mu_signal_2);
 
     // Filter signals
-    float filtered_signal_1[SIGNAL_LENGTH];
-    float filtered_signal_2[SIGNAL_LENGTH];
+    float filtered_signal_1[SIGNAL_LENGTH+N_FIR_B_1-1];
+    float filtered_signal_2[SIGNAL_LENGTH+N_FIR_B_2-1];
 
-    fir_filter(zero_mu_signal_1, filtered_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1);
-    fir_filter(zero_mu_signal_2, filtered_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2);
+    conv(zero_mu_signal_1, SIGNAL_LENGTH, b_fir_1, N_FIR_B_1, filtered_signal_1);
+    conv(zero_mu_signal_2, SIGNAL_LENGTH, b_fir_2, N_FIR_B_2, filtered_signal_2);
 
     // Write to file
     write_to_file("filtered_signal_1.txt", filtered_signal_1, SIGNAL_LENGTH);
