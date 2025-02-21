@@ -39,10 +39,9 @@ void generate_input_samples(const int *num, int len, int N, int *signal)
  */
 float calculate_mean(const int *signal, int N)
 {
-
     float result, sum = 0;
     int i;
-
+    // Accumulate signal -- risk of overflow if sum>FLOAT MAX
     for (i = 0; i < N; i++)
     {
         sum += signal[i];
@@ -63,6 +62,7 @@ float calculate_mean(const int *signal, int N)
 void zero_mean(const int *signal, int N, float *zero_mu_signal)
 {
     float mean = calculate_mean(signal,N);
+    // subtract mean from each sample in signal array
     int i;
     for (i = 0; i < N; i++)
     {
@@ -77,21 +77,29 @@ void zero_mean(const int *signal, int N, float *zero_mu_signal)
  * - N : length of x array
  * - b : second input array
  * - M : length of b array
- * - y : output signal array of length M+N-1
+ * - y : output signal array of length => M+N-1
  */
 void conv(const float *x, int N, const float *b, int M, float *y)
 {
+    // Length of the output convolution result
     int conv_len = M+N-1;
     int n;
+    // Iterate over each output sample
     for (n = 0; n < conv_len; n++)
     {
+        // Initialize output value to zero before accumulation
         y[n] = 0.0f;
 
         int k;
+        // Iterate over second array coefficients
         for  (k = 0; k < M; k++)
         {
+            // Ensure valid indices:
+            // - n >= k ensures no negative indices of x
+            // - (n - k) < N ensures input signal length not exceeded
             if (n >= k && (n-k)<N)
             {
+                // Convolution accumulation
                 y[n] += b[k] * x[n - k];
             }
         }
@@ -107,6 +115,7 @@ void conv(const float *x, int N, const float *b, int M, float *y)
  */
 void write_to_file(const char *filename, const float *signal, int length)
 {
+    // Open file and return if error
     FILE *file = fopen(filename, "w");
     if (file == NULL)
     {
@@ -114,6 +123,7 @@ void write_to_file(const char *filename, const float *signal, int length)
         return;
     }
 
+    // Loop through signal and save each sample to a new line in file
     int i;
     for (i = 0; i < length; i++)
     {
