@@ -78,6 +78,7 @@ void zero_mean(const int *signal, int N, float *zero_mu_signal)
  * - b : second input array
  * - M : length of b array
  * - y : output signal array of length => M+N-1
+ * - verbose: enable or disable printing to console (0 or 1)
  */
 void conv(const float *x, int N, const float *b, int M, float *y, int verbose)
 {
@@ -111,10 +112,12 @@ void conv(const float *x, int N, const float *b, int M, float *y, int verbose)
                 // Convolution accumulation
                 y[n] += b[k] * x[n - k];
                 first = 0;
+                fflush(stdout); // Force printing to console when stepping through loop
             }
         }
         if (verbose)
             printf("= %.2f",y[n]);
+        fflush(stdout); // Force printing to console when stepping through loop
     }
 }
 
@@ -125,7 +128,7 @@ void conv(const float *x, int N, const float *b, int M, float *y, int verbose)
  * - signal : signal array pointer
  * - length : length of signal
  */
-void write_to_file(const char *filename, const float *signal, int length)
+void write_to_file(const char *filename, const float *signal, int N)
 {
     // Open file and return if error
     FILE *file = fopen(filename, "w");
@@ -137,7 +140,7 @@ void write_to_file(const char *filename, const float *signal, int length)
 
     // Loop through signal and save each sample to a new line in file
     int i;
-    for (i = 0; i < length; i++)
+    for (i = 0; i < N; i++)
     {
         fprintf(file, "%f\n", signal[i]);
     }
