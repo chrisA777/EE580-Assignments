@@ -24,53 +24,47 @@ last_four_2 = str2double(sprintf('%d', last_four_2));
 % Sampling frequency
 fs = round((last_four_1 + last_four_2)/2);
 
-%% Plot Signals
-
-% Plot time domain of x_1 (3 cycles)
+%% Plot Time Domain Signals
 stem(x_1(1:27))
 title('3 Cycles of x_1')
 xlabel('n')
 ylabel('Amplitude')
 
-% Plot time domain of x_2 (3 cycles)
 figure;
 stem(x_2(1:27));
 title('3 Cycles of x_2')
 xlabel('n')
 ylabel('Amplitude')
 
-% Calculate FFTs
-X_1=fft(x_1,1024);
-X_2=fft(x_2,1024);
+%% Plot one sided spectrum
 
-% Plot FFT of x_1
-figure;
-L=1024;
-plot(fs/L*(-L/2:L/2-1),abs(fftshift(X_1)))
-title("FFT of X_1")
-xlabel("Frequency (Hz)")
-ylabel("Magnitude")
+N = L/2;                        % Half spectrum length
+f = fs * (0:N-1) / L;           % Frequency axis for 1 sided spectrum
 
-% Plot FFT of x_2
 figure;
-plot(fs/L*(-L/2:L/2-1),abs(fftshift(X_2)))
-title("FFT of X_2")
-xlabel("Frequency (Hz)")
-ylabel("Magnitude")
+plot(f, abs(X_1(1:N)) / N);     
+title("One-Sided FFT of X_1");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
+
+figure;
+plot(f, abs(X_2(1:N)) / N);
+title("One-Sided FFT of X_2");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
+
 %% Filter Signals and plot results
 
-% Convolve signal with filter weights
 y_1 = conv(w_1,x_1);
 
-% Plot time domain of filtered signals (3 cycles) after transient response
 figure;
 hold on;
-stem(x_1(55:54+27))
-stem(y_1(55:54+27))
+stem(x_1(54:81))
+stem(y_1(54:81))
+
 legend("x_1", "y_1")
 title('3 Cycles of filtered signal, y_1')
 xlabel('n')
-ylabel('Amplitude')
 
 % Plot FFTs
 Y_1=fft(y_1,1024);
@@ -84,21 +78,17 @@ plot(fs/L*(-L/2:L/2-1),abs(fftshift(Y_1)))
 
 legend("FFT of X_1", "FFT of Y_1")
 title("FFT of Y_1")
-xlabel("Frequency (Hz)")
-ylabel("Magnitude")
 
-% Convolve signal with filter weights
 y_2 = conv(w_2,x_2);
 
 figure;
 hold on;
-stem(x_2(55:54+27))
-stem(y_2(55:54+27))
+stem(x_2(20:47))
+stem(y_2(20:47))
 
 legend("x_1", "y_1")
 title('3 Cycles of filtered signal, y_2')
 xlabel('n')
-ylabel('Amplitude')
 
 legend("FFT of X_2", "FFT of Y_2")
 
@@ -115,6 +105,27 @@ plot(fs/L*(-L/2:L/2-1),abs(fftshift(Y_2)))
 
 legend("FFT of X_2", "FFT of Y_2")
 title("FFT of Y_2")
-xlabel("Frequency (Hz)")
-ylabel("Magnitude")
+
+
+%% Load in C Filtered Signals
+
+y_1_dsp = table2array(readtable("filtered_signal_1.txt"));
+y_2_dsp = table2array(readtable("filtered_signal_2.txt"));
+
+figure;
+stem(y_1(20:47));
+
+figure;
+stem(y_1_dsp(20:47));
+
+
+
+% figure;
+% hold on;
+% stem(y_1_(20:47))
+% stem(y_1_dsp(20:47))
+% 
+% legend("x_1", "y_1")
+% title('3 Cycles of filtered signal, y_2')
+% xlabel('n')
 
