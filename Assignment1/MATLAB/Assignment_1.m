@@ -64,8 +64,8 @@ group_delay = (length(w_1) - 1)/2;                                          % Ac
 
 figure;
 hold on;
-stem(x_1(54:81))
-stem(y_1(54 + group_delay:81+ group_delay))
+stem(x_1(55:81))
+stem(y_1(55 + group_delay:81+ group_delay))
 
 
 legend("x_1", "y_1")
@@ -86,8 +86,8 @@ title("FFT of Y_1")
 
 figure;
 hold on;
-stem(x_2(54:81))
-stem(y_2(54 + group_delay:81+ group_delay))
+stem(x_2(55:81))
+stem(y_2(55 + group_delay:81+ group_delay))
 
 legend("x_1", "y_1")
 title('3 Cycles of filtered signal, y_2')
@@ -113,33 +113,54 @@ title("FFT of Y_2")
 y_1_dsp = table2array(readtable("filtered_signal_1.txt"));
 y_2_dsp = table2array(readtable("filtered_signal_2.txt"));
 
+% Calculate average differecnce
+diff_y1 = mean(abs(y_1(:) - y_1_dsp(:)));
+diff_y2 = mean(abs(y_2(:) - y_2_dsp(:)));
+
+% Time domain y_1
 figure;
 hold on;
-stem(y_1(54 + group_delay:81 + group_delay), 'LineStyle', ':', 'Marker', 'd');
-stem(y_1_dsp(54 + group_delay:81+ group_delay));
-legend('MATLAB Filtered y_1', 'C Filtered y_1')
+stem(y_1_dsp(55 + group_delay:81 + group_delay), 'LineStyle', ':', 'Marker', 'd');
+stem(y_1(55 + group_delay:81+ group_delay));
+legend('C Filtered y_1', 'MATLAB Filtered y_1')
 title('Time Domain Comparison (3 Cycles) for y_1')
 xlabel('n')
 ylabel('Amplitude')
 
+% Time domain y_2
 figure;
 hold on
-stem(y_2(54 + group_delay:81 + group_delay), 'LineStyle', ':', 'Marker', 'd');
-stem(y_2_dsp(54 + group_delay:81+ group_delay));
-legend('MATLAB Filtered y_1', 'C Filtered y_1')
-title('Time Domain Comparison (3 Cycles) for y_1')
+stem(y_2_dsp(55 + group_delay:81 + group_delay), 'LineStyle', ':', 'Marker', 'd');
+stem(y_2(55 + group_delay:81+ group_delay));
+legend('C Filtered y_2', 'MATLAB Filtered y_2')
+title('Time Domain Comparison (3 Cycles) for y_2')
 xlabel('n')
 ylabel('Amplitude')
 
+% FFT y_1
+Y_1=fft(y_1,1024);
+Y_1_dsp=fft(y_1_dsp,1024);
 
+figure
+hold on;
+plot(f, abs(Y_1_dsp(1:N)) / N);
+plot(f, abs(Y_1(1:N)) / N, "LineStyle", "--");  
+legend('C Filtered Y_1', 'MATLAB Filtered Y_1')
+title('Frequency Domain Comparison for Y_1')
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
 
+% FFT y_2
+Y_2=fft(y_2,1024);
+Y_2_dsp=fft(y_2_dsp,1024);
 
-% figure;
-% hold on;
-% stem(y_1_(20:47))
-% stem(y_1_dsp(20:47))
-% 
-% legend("x_1", "y_1")
-% title('3 Cycles of filtered signal, y_2')
-% xlabel('n')
+figure
+hold on;
+plot(f, abs(Y_2_dsp(1:N)) / N);
+plot(f, abs(Y_2(1:N)) / N, "LineStyle", "--");  
+legend('C Filtered Y_2', 'MATLAB Filtered Y_2')
+title('Frequency Domain Comparison for Y_2')
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
+
 

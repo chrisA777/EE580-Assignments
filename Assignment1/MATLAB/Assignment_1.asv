@@ -113,20 +113,29 @@ title("FFT of Y_2")
 y_1_dsp = table2array(readtable("filtered_signal_1.txt"));
 y_2_dsp = table2array(readtable("filtered_signal_2.txt"));
 
+% Time domain y_1
 figure;
-stem(y_1(54 + group_delay:81+ group_delay))
 hold on;
-stem(segment, y_1_dsp(segment), 'r')
+stem(y_1(54 + group_delay:81+ group_delay));
+stem(y_1_dsp(54 + group_delay:81 + group_delay), 'LineStyle', ':', 'Marker', 'd');
 legend('MATLAB Filtered y_1', 'C Filtered y_1')
 title('Time Domain Comparison (3 Cycles) for y_1')
-xlabel('Sample Number')
+xlabel('n')
 ylabel('Amplitude')
 
+% Time domain y_2
 figure;
-stem(y_1(20:47));
+hold on
+stem(y_2(54 + group_delay:81+ group_delay));
+stem(y_2_dsp(54 + group_delay:81 + group_delay), 'LineStyle', ':', 'Marker', 'd');
+legend('MATLAB Filtered y_1', 'C Filtered y_1')
+title('Time Domain Comparison (3 Cycles) for y_1')
+xlabel('n')
+ylabel('Amplitude')
 
-figure;
-stem(y_1_dsp(20:47));
+% FFT y_1
+Y_1=fft(y_1,1024);
+Y_1=fft(y_1,1024);
 
 
 
