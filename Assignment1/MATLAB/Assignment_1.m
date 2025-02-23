@@ -1,3 +1,6 @@
+% Load saved filter weights
+load('filter_weights.mat')                                                       
+
 % Define two inputs
 student_num_1 = [2 0 2 0 3 7 6 9 6];                            
 student_num_2 = [2 0 2 0 3 2 1 7 5];
@@ -38,16 +41,24 @@ ylabel('Amplitude')
 
 %% Plot one sided spectrum
 
-N = L/2;                                                                     % Half spectrum length
-f = fs * (0:N-1) / L;                                                        % Frequency axis for 1 sided spectrum
+L=1024;
+% Half spectrum length
+N = L/2;           
+% Frequency axis for 1 sided spectrum
+f = fs * (0:N-1) / L;                                                        
 
-figure;                                                                      % Plotting one sided spectrum of X_1
+X_1=fft(x_1,L);
+X_2=fft(x_2,L);
+
+% Plotting one sided spectrum of X_1
+figure;                                                                      
 plot(f, abs(X_1(1:N)) / N);     
 title("One-Sided FFT of X_1");
 xlabel("Frequency (Hz)");
 ylabel("Magnitude");
 
-figure;                                                                      % Same for X_2
+% Plotting one sided spectrum of X_2
+figure;                                                                      
 plot(f, abs(X_2(1:N)) / N);
 title("One-Sided FFT of X_2");
 xlabel("Frequency (Hz)");
@@ -55,13 +66,16 @@ ylabel("Magnitude");
 
 %% Filter Signals 
 
-y_1 = conv(w_1,x_1);                                                        % Convolution to obtain filter outputs
+% Convolution to obtain filter outputs
+y_1 = conv(w_1,x_1);                                                        
 y_2 = conv(w_2,x_2);
 
 %% Plot results
 
-group_delay = (length(w_1) - 1)/2;                                          % Account for gd to avoid misalignment - same for both filters 
+% Account for gd to avoid misalignment - same for both filters 
+group_delay = (length(w_1) - 1)/2;                             
 
+% Plot time domain comparison of x_1 and y_1
 figure;
 hold on;
 stem(x_1(55:81))
@@ -71,10 +85,11 @@ stem(y_1(55 + group_delay:81+ group_delay))
 legend("x_1", "y_1")
 title('3 Cycles of filtered signal, y_1')
 xlabel('n')
+ylabel("Amplitude")
 
 % Plot FFTs
-Y_1=fft(y_1,1024);
-X_1=fft(x_1,1024);
+Y_1=fft(y_1,L);
+X_1=fft(x_1,L);
 
 figure
 hold on;
@@ -82,8 +97,12 @@ plot(f, abs(X_1(1:N)) / N, "LineStyle", "--");
 plot(f, abs(Y_1(1:N)) / N); 
 
 legend("FFT of X_1", "FFT of Y_1")
-title("FFT of Y_1")
+title("One-Sided FFT of Y_1");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
 
+
+% Plot time domain comparison of x_2 and y_2
 figure;
 hold on;
 stem(x_2(55:81))
@@ -92,7 +111,7 @@ stem(y_2(55 + group_delay:81+ group_delay))
 legend("x_1", "y_1")
 title('3 Cycles of filtered signal, y_2')
 xlabel('n')
-
+ylabel("Amplitude")
 legend("x_2", "y_2")
 
 % Plot FFTs
@@ -105,11 +124,15 @@ plot(f, abs(X_2(1:N)) / N, "LineStyle", "--");
 plot(f, abs(Y_2(1:N)) / N); 
 
 legend("FFT of X_2", "FFT of Y_2")
-title("FFT of Y_2")
+title("One-Sided FFT of Y_2");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
 
 
-%% Load in C Filtered Signals
 
+%% Comparison with C implementation
+
+% Load in C Filtered Signals
 y_1_dsp = table2array(readtable("filtered_signal_1.txt"));
 y_2_dsp = table2array(readtable("filtered_signal_2.txt"));
 
