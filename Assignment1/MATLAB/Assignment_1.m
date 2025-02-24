@@ -67,13 +67,13 @@ ylabel("Magnitude");
 %% Filter Signals 
 
 % Convolution to obtain filter outputs
-y_1 = conv(w_1,x_1);                                                        
-y_2 = conv(w_2,x_2);
+y_1 = conv(b_fir_1,x_1);                                                        
+y_2 = conv(b_fir_2,x_2);
 
 %% Plot results
 
 % Account for gd to avoid misalignment - same for both filters 
-group_delay = (length(w_1) - 1)/2;                             
+group_delay = (length(b_fir_1) - 1)/2;                             
 
 % Plot time domain comparison of x_1 and y_1
 figure;
@@ -127,8 +127,6 @@ legend("FFT of X_2", "FFT of Y_2")
 title("One-Sided FFT of Y_2");
 xlabel("Frequency (Hz)");
 ylabel("Magnitude");
-
-
 
 %% Comparison with C implementation
 
