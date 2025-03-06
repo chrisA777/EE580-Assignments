@@ -78,6 +78,7 @@ _DDR = DDR;
 _IRAM = IRAM;
 _L3_CBA_RAM = L3_CBA_RAM;
 _PRD_clock = PRD_clock;
+_PRD0 = PRD0;
 _RTA_fromHost = RTA_fromHost;
 _RTA_toHost = RTA_toHost;
 _HWI_RESET = HWI_RESET;
@@ -221,6 +222,7 @@ _EVENT125 = EVENT125;
 _EVENT126 = EVENT126;
 _EVENT127 = EVENT127;
 _KNL_swi = KNL_swi;
+_PRD_swi = PRD_swi;
 _TSK_idle = TSK_idle;
 _IDL_cpuLoad = IDL_cpuLoad;
 _LNK_dataPump = LNK_dataPump;
@@ -277,7 +279,7 @@ SECTIONS {
    .prd: RUN_START(PRD_A_TABBEG), RUN_END(PRD_A_TABEND) {
    } > IRAM
 }
-PRD_A_TABLEN = 0;
+PRD_A_TABLEN = 1;
 
 /* MODULE RTDX */
 _RTDX_interrupt_mask = 0x0;
@@ -296,7 +298,7 @@ SECTIONS {
    .swi: RUN_START(SWI_A_TABBEG), RUN_END(SWI_A_TABEND) {
    } > IRAM
 }
-SWI_A_TABLEN = 1;
+SWI_A_TABLEN = 2;
 
 /* MODULE TSK */
 SECTIONS {

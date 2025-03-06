@@ -111,7 +111,7 @@ type GlobalStatus {
         prop Visible :: 0
         prop Writable :: 1
     }
-    global DATE :: "Thu Mar 06 16:10:39 2025" { 
+    global DATE :: "Thu Mar 06 16:40:12 2025" { 
         prop Type :: "{21455EA3-B96A-11cf-9BFE-0000C0AC14C7}"
         prop Visible :: 0
         prop Writable :: 0
@@ -2845,12 +2845,12 @@ type PRD {
         prop Writable :: 0
         prop NoGen :: 1
     }
-    global gNumOf :: 0 { 
+    global gNumOf :: 1 { 
         prop Visible :: 0
         prop Writable :: 0
         prop NoGen :: 1
     }
-    global gDirty :: 0 { 
+    global gDirty :: 1 { 
         prop Visible :: 0
         prop Writable :: 0
         prop NoGen :: 1
@@ -3039,7 +3039,7 @@ type PRD {
 
 object PRD_swi :: SWI {
     param iComment :: "This Software ISR executes all configured PRD functions"
-    param iIsUsed :: 0
+    param iIsUsed :: 1
     param iId :: 0
     param iDelUser :: "PRD"
     param iDelMsg :: "This object is automatically deleted when all PRD objects are deleted"
@@ -6550,7 +6550,7 @@ type SWI {
         prop Writable :: 0
         prop NoGen :: 1
     }
-    global gNumOf :: 1 { 
+    global gNumOf :: 2 { 
         prop Visible :: 0
         prop Writable :: 0
         prop NoGen :: 1
@@ -8738,7 +8738,7 @@ type STS {
         prop Writable :: 1
         prop NoGen :: 1
     }
-    global gNumEmbed :: 1 { 
+    global gNumEmbed :: 3 { 
         prop Visible :: 0
         prop Writable :: 0
         prop NoGen :: 1
@@ -10817,5 +10817,25 @@ object trace :: LOG {
     param logtype :: "circular"
     param iType :: "printf"
     param iFormat :: "0x%x, 0x%x, 0x%x"
+}
+
+object PRD0 :: PRD {
+    param iComment :: "<add comments here>"
+    param iIsUsed :: 1
+    param iId :: 0
+    param iDelUser :: "USER"
+    param iDelMsg :: "ok"
+    param period :: 500
+    param mode :: "continuous"
+    param function :: @_dipPRD
+    param arg0 :: 0
+    param arg1 :: 0
+    param Order :: 1
+    param iPri :: 0
+    param filter :: 0
+    param maxformat :: "%g ticks"
+    param sumformat :: "%g ticks"
+    param avgformat :: "%.2f ticks"
+    param unittype :: 2
 }
 

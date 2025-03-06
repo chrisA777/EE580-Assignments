@@ -80,6 +80,7 @@
 	.global	__PWRM_finalizeSlot
 	.global	_SEG0
 	.global	_audioHWI
+	.global	_dipPRD
 
 ;; MODULE PARAMETERS
 GBL$                .set 1

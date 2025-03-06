@@ -4,11 +4,12 @@ hello.obj: ../hello.c
 hello.obj: hellocfg.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/std.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/tistdtypes.h
+hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/prd.h
+hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/fxn.h
+hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/sts.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/hst.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/pip.h
 hello.obj: C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stddef.h
-hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/fxn.h
-hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/sts.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/swi.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/hwi.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/tsk.h
@@ -20,7 +21,6 @@ hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/que.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/mem.h
 hello.obj: C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stddef.h
 hello.obj: C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stdarg.h
-hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/prd.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/sem.h
 hello.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/obj.h
 hello.obj: C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stddef.h
@@ -56,15 +56,17 @@ C:/ti/bios_5_42_01_09/packages/ti/bios/include/std.h:
 
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/tistdtypes.h:
 
+C:/ti/bios_5_42_01_09/packages/ti/bios/include/prd.h:
+
+C:/ti/bios_5_42_01_09/packages/ti/bios/include/fxn.h:
+
+C:/ti/bios_5_42_01_09/packages/ti/bios/include/sts.h:
+
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/hst.h:
 
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/pip.h:
 
 C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stddef.h:
-
-C:/ti/bios_5_42_01_09/packages/ti/bios/include/fxn.h:
-
-C:/ti/bios_5_42_01_09/packages/ti/bios/include/sts.h:
 
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/swi.h:
 
@@ -87,8 +89,6 @@ C:/ti/bios_5_42_01_09/packages/ti/bios/include/mem.h:
 C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stddef.h:
 
 C:/ti/ccs1271/ccs/tools/compiler/c6000_7.3.23/include/stdarg.h:
-
-C:/ti/bios_5_42_01_09/packages/ti/bios/include/prd.h:
 
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/sem.h:
 
