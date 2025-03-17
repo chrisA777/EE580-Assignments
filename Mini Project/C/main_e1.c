@@ -13,7 +13,7 @@ uint16_t read_index = 0;         // Buffer read pointer
 
 // filter memory
 float y_history[N_IIR_high_A] = {0.0};   // past outputs
-float x_history[N_IIR_high_B] = {0.0};;  // past inputs
+float x_history[N_IIR_high_B] = {0.0};  // past inputs
 
 
 //---------------------------------------------------------
