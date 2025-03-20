@@ -27,9 +27,9 @@ grid on;
 
 
 % Filter activation flags
-useLowPass = false;
+useLowPass = true;
 useBandPass = false;
-useHighPass = true;
+useHighPass = false;
 
 % Low-pass filter design (Butterworth)
 if useLowPass

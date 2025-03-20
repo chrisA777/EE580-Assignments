@@ -8,13 +8,16 @@
 #include "evmc6748_led.h"
 #include "evmc6748_dip.h"
 #include "framework.h"
-#include "data.h"
+//#include "data.h"
+#include "data_sos.h"
 
 /*
  *  ======== main ========
  */
 
 #define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
+
+#define NUM_BIQUADS 8
 
 int16_t buffer[BUFFER_SIZE];     // Circular buffer
 uint16_t write_index = 0;        // Buffer write pointer
@@ -33,63 +36,16 @@ float A[MAX_FILTER_LENGTH] = {0.0};
 uint8_t state = 0; //0: off, 1: recording, 2: filtering
 float playback_sample;
 
-void conv(const float *x, int N, const float *b, int M, float *y, int verbose)
-{
 
-    // Length of the output convolution result
-    int conv_len = M+N-1;
-    float *temp = (float *)malloc(conv_len * sizeof(float));
-    memset(temp, 0, sizeof(temp));
-
-    int n;
-    // Iterate over each output sample
-    for (n = 0; n < conv_len; n++)
-    {
-        // Initialize output value to zero before accumulation
-        y[n] = 0.0f;
-
-        int k;
-        int first = 1;
-        if (verbose)
-            printf("\ny[%d] = ",n);
-        // Iterate over second array coefficients
-        for  (k = 0; k < M; k++)
-        {
-            // Ensure valid indices:
-            // - n >= k ensures no negative indices of x
-            // - (n - k) < N ensures input signal length not exceeded
-            if (n >= k && (n-k)<N)
-            {
-                if (verbose)
-                {
-                    if (!first)
-                        printf("+ ");
-                    printf("(%.2f * %.2f) ",x[n-k],b[k]);
-                }
-                // Convolution accumulation
-                temp[n] += b[k] * x[n - k];
-                first = 0;
-                fflush(stdout); // Force printing to console when stepping through loop
-            }
-        }
-        if (verbose)
-            printf("= %.2f",y[n]);
-        fflush(stdout); // Force printing to console when stepping through loop
-    }
-
-    // Copy the result back to the original signal array
-    int i;
-    for (i = 0; i < conv_len; i++) {
-        y[i] = temp[i];
-    }
-    free(temp);
-}
+float w[NUM_BIQUADS] = {0.0};
 
 void main(void)
 {
     // Ensure all elements in history arrays are set to zero
     memset(y_history, 0, sizeof(y_history));
     memset(x_history, 0, sizeof(x_history));
+
+    memset(w, 0, sizeof(w));
 
     memset(B, 0, sizeof(B));
     memset(A, 0, sizeof(A));
@@ -119,13 +75,13 @@ void dipPRD(void)
         if (dip_status2)
         {
             state = 2;
-            B[0] = 1.0f;
-            A[0] = 1.0f;
-            if (dip_status6)
-            {
-                conv(B, MAX_FILTER_LENGTH, IIR_high_B, N_IIR_high_B, B, 0);
-                conv(A, MAX_FILTER_LENGTH, IIR_high_A, N_IIR_high_A, B, 0);
-            }
+//            B[0] = 1.0f;
+//            A[0] = 1.0f;
+//            if (dip_status6)
+//            {
+//                conv(B, MAX_FILTER_LENGTH, IIR_high_B, N_IIR_high_B, B, 0);
+//                conv(A, MAX_FILTER_LENGTH, IIR_high_A, N_IIR_high_A, B, 0);
+//            }
         }
         else
         {
@@ -155,7 +111,8 @@ void ledPRD(void)
 float apply_biquad_filter(float *b, float *a, float *w, float gain, float x)
 {
     // TODO: apply gain
-    float w0 = x - a[0]*w[0] - a[1]*w[1];
+    x *= gain;
+    float w0 = x - a[1]*w[0] - a[2]*w[1];
     float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
 
     w[1] = w[0];
@@ -166,21 +123,24 @@ float apply_biquad_filter(float *b, float *a, float *w, float gain, float x)
 /*
  * Where:
  * - b is a (1xN*3) array of all coefficients
- * - a is a (1xN*2) array of all coefficients
+ * - a is a (1xN*3) array of all coefficients
  * - w is a (1xN*2) array of all stored w values
  * - G is a (1xN) array of all gains
  * - N is the total number of biquads in cascade
  * - x is the input sample
  */
-float apply_sos_IIR_filter(float *b, float *a, float *w, float *G, int N,  float x)
+
+float apply_sos_IIR_filter(float *b, float *a, float *w, float *G, int N, float x)
 {
     int i;
+    float y;
     for (i=1;i<N;i++)
     {
-        x = apply_biquad_filter(b+(3*N), a+(2*N), w+(2*N), *(G+N), x);
+        y = apply_biquad_filter(b+(3*i), a+(3*i), w+(2*i), G[i], x);
+        x = y;
     }
 
-    return x;
+    return y;
 }
 
 
@@ -253,7 +213,7 @@ void audioHWI(void)
                 // Read from buffer for playback
                 playback_sample = (float)buffer[read_index];
                 read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-
+                playback_sample = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w, IIR_high_G, NUM_BIQUADS, playback_sample);
 //                playback_sample = applyIIRFilter(playback_sample, x_history, y_history, IIR_low_B, IIR_low_A, N_IIR_low_B);
 //                playback_sample = applyIIRFilter(playback_sample, x_history, y_history, B, A, MAX_FILTER_LENGTH);
 

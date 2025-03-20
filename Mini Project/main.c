@@ -1,10 +1,12 @@
 //---------------------------------------------------------
-// main example 3
+// main
 //---------------------------------------------------------
 #include "hellocfg.h"			//BIOS include file
 #include "framework.h"
 
 int16_t volatile mask = 0xffff;
+
+uint8_t state = 0; // 0: off, 1: recording, 2: filtering
 
 //---------------------------------------------------------
 //---------------------------------------------------------
@@ -19,22 +21,27 @@ void main(void)
 //---------------------------------------------------------
 void dipPRD(void)
 {
-	uint8_t dip_status8;
+	uint8_t dip_status1;
+	uint8_t dip_status2;
 
-	DIP_get(DIP_8, &dip_status8);
+	DIP_get(DIP_1, &dip_status1);
+	DIP_get(DIP_2, &dip_status2);
 
-	if(dip_status8)
+	if(dip_status1)
 	{
-		mask = 0xffff;
-		LED_turnOn(LED_2);
+	    if (dip_status2)
+        {
+            state = 2;
+        }
+        else
+        {
+            state = 1;
+        }
 	}
 	else
 	{
-		mask = 0x0000;
-		LED_turnOff(LED_2);
+		state = 0;
 	}
-
-	LED_toggle(LED_1);
 }
 
 
@@ -45,17 +52,25 @@ void audioHWI(void)
 	int16_t s16;
 
 	s16 = read_audio_sample();
-	if (MCASP->RSLOT)
+
+	switch(state)
 	{
-		// THIS IS THE LEFT CHANNEL!!!
-		//s16 = process(s16);
-		s16 &= mask;
+        case 0:
+            write_audio_sample(0);
+            break;
+        case 1:
+            if (MCASP->RSLOT)
+            {
+                // THIS IS THE LEFT CHANNEL!!!
+                write_audio_sample(s16);
+            }
+            break;
+        case 2:
+            write_audio_sample(0);
+            break;
 	}
-	else {
-		// THIS IS THE RIGHT CHANNEL!!!
-		//s16 = process(s16);
-		s16 &= mask;
-	}
-	write_audio_sample(s16);
+
+
+
 }
 
