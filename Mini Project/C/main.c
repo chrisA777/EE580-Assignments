@@ -8,6 +8,7 @@
 #include "evmc6748_led.h"
 #include "evmc6748_dip.h"
 #include "framework.h"
+#include "maincfg.h"
 //#include "data.h"
 #include "data_sos.h"
 
@@ -44,6 +45,7 @@ float A[MAX_FILTER_LENGTH] = {0.0};
 
 uint8_t state = 0; //0: off, 1: recording, 2: filtering
 float playback_sample;
+float filtered_sample;
 
 
 float w_low[NUM_BIQUADS_LOW] = {0.0};
@@ -67,6 +69,7 @@ void main(void)
     /* fall into DSP/BIOS idle loop */
     return;
 }
+
 
 void dipPRD(void)
 {
@@ -176,46 +179,44 @@ float apply_sos_IIR_filter(float *b, float *a, float *w, float *G, int N, float 
     return y;
 }
 
+void filterSWI0(void)  // SWI0
+{
+    if (filter_state & LOW_MASK)
+    {
+        filtered_sample = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, filtered_sample);
+    }
 
-//---------------------------------------------------------
-// filtering
-//---------------------------------------------------------
-//float applyIIRFilter(float x, float *x_hist, float *y_hist, const float *b, const float *a, int order) {
-//    float y = 0.0;
-//    int i;
-//
-//
-//    // shift history for input samples
-//    for (i = order - 1; i > 0; i--) {
-//        x_hist[i] = x_hist[i - 1];
-//    }
-//    x_hist[0] = x;
-//
-//
-//    // difference equation
-//    for (i = 0; i < order; i++) {
-//        y += b[i] * x_hist[i];
-//        if (i > 0) {
-//            y -= a[i] * y_hist[i - 1];
-//        }
-//    }
-//
-//    // shift history for output samples
-//    for (i = order - 1; i > 0; i--) {
-//        y_hist[i] = y_hist[i - 1];
-//    }
-//
-//    y_hist[0] = y;
-//
-//    return y;
-//}
+    SWI_post(&SWI1);  // Move to next filter
+}
+
+void filterSWI1(void)  // SWI1
+{
+    if (filter_state & BP_MASK)
+    {
+        filtered_sample = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, filtered_sample);
+    }
+
+    SWI_post(&SWI2);  // Move to next filter
+}
+
+void filterSWI2(void)  // SWI2
+{
+    if (filter_state & HIGH_MASK)
+    {
+        filtered_sample = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, filtered_sample);
+    }
+
+    // Output final result
+    write_audio_sample((int16_t)filtered_sample);
+}
+
+float filtered_sample;
 
 
 void audioHWI(void)
 {
     int16_t s16;
     s16 = read_audio_sample();
-
 
     switch(state)
     {
@@ -225,42 +226,25 @@ void audioHWI(void)
         case 1:
             if (MCASP->RSLOT)
             {
-                // Left audio channel
-                // Store sample in circular buffer
                 buffer[write_index] = s16;
-                write_index = (write_index + 1) % BUFFER_SIZE;  // Wrap around if needed
+                write_index = (write_index + 1) % BUFFER_SIZE;
                 write_audio_sample(s16);
             }
             else
             {
-                // right audio channel
-                // Need to output something?
                 write_audio_sample(0);
             }
             break;
         case 2:
-
             if (MCASP->RSLOT)
             {
-                // Left audio channel
-                // Read from buffer for playback
                 playback_sample = (float)buffer[read_index];
                 read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-
-                if (filter_state & LOW_MASK)
-                    playback_sample = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-                if (filter_state & BP_MASK)
-                    playback_sample = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
-                if (filter_state & HIGH_MASK)
-                    playback_sample = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
-
-                write_audio_sample((int16_t)playback_sample);
-
+                filtered_sample = playback_sample;
+                SWI_post(&SWI0);  // Post to SWI to handle filtering
             }
             else
             {
-                // right audio channel
-                // Need to output something?
                 write_audio_sample(0);
             }
             break;

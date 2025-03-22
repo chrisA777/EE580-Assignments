@@ -91,6 +91,29 @@ bios.PRD.instance("ledFlash").order = 4;
 bios.PRD.instance("ledFlash").fxn = prog.extern("ledPRD");
 bios.PRD.instance("ledFlash").period = 20;
 bios.PRD.instance("ledFlash").period = 50;
+bios.SWI.create("SWI0");
+bios.SWI.instance("SWI0").order = 1;
+bios.SWI.instance("SWI0").fxn = prog.extern("filterSWI");
+bios.SWI.instance("SWI0").priority = 2;
+bios.SWI.create("SWI1");
+bios.SWI.instance("SWI1").order = 2;
+bios.SWI.instance("SWI1").priority = 2;
+bios.SWI.create("SWI2");
+bios.SWI.instance("SWI2").order = 3;
+bios.SWI.instance("SWI2").priority = 2;
+bios.SWI.instance("PRD_swi").order = 1;
+bios.SWI.instance("KNL_swi").order = 2;
+bios.SWI.instance("PWRM_loadSwi").order = 3;
+bios.SWI.instance("SWI1").order = 4;
+bios.SWI.instance("SWI2").order = 5;
+bios.SWI.instance("SWI0").destroy();
+bios.SWI.create("SWI0");
+bios.SWI.instance("SWI0").order = 7;
+bios.SWI.instance("SWI0").fxn = prog.extern("filterSWI");
+bios.SWI.instance("SWI0").priority = 2;
+bios.SWI.instance("SWI0").fxn = prog.extern("filterSWI0");
+bios.SWI.instance("SWI1").fxn = prog.extern("filterSWI1");
+bios.SWI.instance("SWI2").fxn = prog.extern("filterSWI2");
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {
