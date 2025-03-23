@@ -92,6 +92,8 @@ void dipPRD(void)
         {
             state =2;
 
+
+
             if (dip_status6)
             {
                 filter_state |= LOW_MASK;
@@ -128,13 +130,25 @@ void dipPRD(void)
     {
         state = 0;
     }
+
+    if (state==2){
+        LED_toggle(LED_1);
+    }
 }
 
-void ledPRD(void)
+void ledPRD_20Hz(void)
 {
     if (state == 1)
     {
         LED_toggle(LED_1);
+        LED_toggle(LED_2);
+    }
+}
+
+void ledPRD_6Hz(void){
+
+    if (state == 2 && filter_state != 0)  // At least one filter is active
+    {
         LED_toggle(LED_2);
     }
 }
@@ -146,7 +160,7 @@ void ledPRD(void)
  */
 float apply_biquad_filter(float *b, float *a, float *w, float gain, float x)
 {
-//    x *= gain;
+    //x *= gain;
     float w0 = x - a[1]*w[0] - a[2]*w[1];
     float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
 
@@ -186,6 +200,7 @@ void filterSWI0(void)  // SWI0
         filtered_sample = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, filtered_sample);
     }
 
+
     SWI_post(&SWI1);  // Move to next filter
 }
 
@@ -195,6 +210,7 @@ void filterSWI1(void)  // SWI1
     {
         filtered_sample = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, filtered_sample);
     }
+
 
     SWI_post(&SWI2);  // Move to next filter
 }
@@ -206,11 +222,16 @@ void filterSWI2(void)  // SWI2
         filtered_sample = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, filtered_sample);
     }
 
+    if (filtered_sample > 32767.0f)
+        filtered_sample = 32767.0f;
+    else if (filtered_sample < -32768.0f)
+        filtered_sample = -32768.0f;
+
+
     // Output final result
     write_audio_sample((int16_t)filtered_sample);
 }
 
-float filtered_sample;
 
 
 void audioHWI(void)

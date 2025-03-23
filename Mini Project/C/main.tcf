@@ -114,6 +114,16 @@ bios.SWI.instance("SWI0").priority = 2;
 bios.SWI.instance("SWI0").fxn = prog.extern("filterSWI0");
 bios.SWI.instance("SWI1").fxn = prog.extern("filterSWI1");
 bios.SWI.instance("SWI2").fxn = prog.extern("filterSWI2");
+bios.PRD.instance("ledFlash").destroy();
+bios.PRD.create("ledFlash_20Hz");
+bios.PRD.instance("ledFlash_20Hz").order = 4;
+bios.PRD.instance("ledFlash_20Hz").period = 50;
+bios.PRD.instance("ledFlash_20Hz").fxn = prog.extern("ledPRD");
+bios.PRD.create("ledFlash_6Hz");
+bios.PRD.instance("ledFlash_6Hz").order = 5;
+bios.PRD.instance("ledFlash_6Hz").fxn = prog.extern("ledPRD_6Hz");
+bios.PRD.instance("ledFlash_6Hz").period = 167;
+bios.PRD.instance("ledFlash_20Hz").fxn = prog.extern("ledPRD_20Hz");
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {

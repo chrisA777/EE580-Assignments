@@ -1,5 +1,6 @@
 
 write_filter_coefficients('data.h', 'IIR_low', b_low, a_low);
+write_filter_coefficients('data.h', 'IIR_low_2', b_low_2, a_low_2);
 write_filter_coefficients('data.h', 'IIR_bp', b_bp, a_bp);
 write_filter_coefficients('data.h', 'IIR_high', b_high, a_high);
 
