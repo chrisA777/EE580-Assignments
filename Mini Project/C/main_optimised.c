@@ -59,7 +59,7 @@ volatile float filtered_sample;
 volatile float playback_sample;
 volatile float lp, bp, hp;
 
-uint32_t dipAll;
+
 
 LgUns startTime, endTime, duration;
 
@@ -72,9 +72,9 @@ void main(void)
 
     initAll();
 //    LOG_printf(&trace, "State1 mask: %d, state 2 mask: %d", STATE_1_MASK, STATE_2_MASK);
-    LOG_printf(&trace, "1: %d, 2: %d",DIP_1_MASK, DIP_2_MASK);
-    LOG_printf(&trace, "6: %d, 7: %d",DIP_6_MASK, DIP_7_MASK);
-    LOG_printf(&trace, "dip all: %d, state mask: %d",dipAll, dipAll&STATE_MASK);
+//    LOG_printf(&trace, "1: %d, 2: %d",DIP_1_MASK, DIP_2_MASK);
+//    LOG_printf(&trace, "6: %d, 7: %d",DIP_6_MASK, DIP_7_MASK);
+//    LOG_printf(&trace, "dip all: %d, state mask: %d",dipAll, dipAll&STATE_MASK);
 //    LOG_printf(&trace, "state1: %d, state2: %d",STATE_1_MASK, STATE_2_MASK);
     /* fall into DSP/BIOS idle loop */
     return;
@@ -84,9 +84,22 @@ void main(void)
 void dipPRD(void)
 {
 //    startTime = CLK_gethtime();
+//    uint32_t dipAll;
+//    DIP_getAll(&dipAll);
+//    dipAll = ~dipAll;
 
-    DIP_getAll(&dipAll);
-    dipAll = ~dipAll;
+    uint8_t dip_status1;
+    uint8_t dip_status2;
+    uint8_t dip_status6;
+    uint8_t dip_status7;
+    uint8_t dip_status8;
+
+    DIP_get(DIP_1, &dip_status1);
+    DIP_get(DIP_2, &dip_status2);
+    DIP_get(DIP_6, &dip_status6);
+    DIP_get(DIP_7, &dip_status7);
+    DIP_get(DIP_8, &dip_status8);
+
 //    LOG_printf(&trace, "DIP ALL: %d", (dipAll&DIP_1_MASK)==DIP_1_MASK);
 //    LOG_printf(&trace, "dip all: %d, state mask: %d",dipAll, dipAll&STATE_MASK);
 
@@ -97,29 +110,59 @@ void dipPRD(void)
 //    LOG_printf(&trace, "Ticks: %d, %d", dipAll, DIP_1_MASK);
 
 //    if (dipAll&DIP_1_MASK)
-//    {
+    if(dip_status1)
+    {
 //        if (dipAll&DIP_2_MASK)
-//        {
-//            state = 2;
-//            LED_toggle(LED_1);
-//        }
-//        else
-//        {
-//            state = 1;
-//        }
-//    }
-//    else
-//    {
-//        state = 0;
-//    }
+        if(dip_status2)
+        {
+            state = 2;
+//            if (dipAll&DIP_6_MASK)
+            if(dip_status6)
+            {
+                filter_state |= LOW_MASK;
+            }
+            else
+            {
+                filter_state &= ~LOW_MASK;
+            }
 
-    if ((dipAll&STATE_MASK) == 3)
-        LED_toggle(LED_1);
+//            if (dipAll&DIP_7_MASK)
+            if(dip_status7)
+            {
+                filter_state |= BP_MASK;
+            }
+            else
+            {
+                filter_state &= ~BP_MASK;
+            }
+//            if (dipAll&DIP_8_MASK)
+            if(dip_status8)
+            {
+                filter_state |= HIGH_MASK;
+            }
+            else
+            {
+                filter_state &= ~HIGH_MASK;
+            }
+            LED_toggle(LED_1);
+        }
+        else
+        {
+            state = 1;
+        }
+    }
+    else
+    {
+        state = 0;
+    }
+
+//    if ((dipAll&STATE_MASK) == 3)
+//        LED_toggle(LED_1);
 }
 
 void ledPRD_20Hz(void)
 {
-    if ((dipAll&STATE_MASK) == 1)
+    if (state == 1)
     {
         LED_toggle(LED_1);
         LED_toggle(LED_2);
@@ -129,10 +172,11 @@ void ledPRD_20Hz(void)
 void ledPRD_6Hz(void)
 {
 //    LOG_printf(&trace,"6hz: %d", (FILTERS_MASK & dipAll));
-    if (((dipAll&STATE_MASK) == 3) && (FILTERS_MASK & dipAll) > 0)  // At least one filter is active
+    if (state == 2 && filter_state > 0)  // At least one filter is active
     {
         LED_toggle(LED_2);
     }
+
 }
 
 
@@ -178,7 +222,7 @@ float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int
 void filterSWI0(void)  // SWI0
 {
     filtered_sample = 0;
-    if ((dipAll&STATE_MASK) == 3)
+    if (state == 2)
     {
         filtered_sample = 0;
         playback_sample = (float)buffer[read_index];
@@ -186,16 +230,24 @@ void filterSWI0(void)  // SWI0
 //        SWI_post(&SWI1);
 //        SWI_post(&SWI2);
 
-        if (dipAll&DIP_6_MASK)
-            filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-        if (dipAll&DIP_7_MASK)
-            filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
-        if (dipAll&DIP_8_MASK)
-            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+//        if (dipAll&DIP_6_MASK)
+//            filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+//        if (dipAll&DIP_7_MASK)
+//            filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+//        if (dipAll&DIP_8_MASK)
+//            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+
+         if (filter_state & LOW_MASK)
+             filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+         if (filter_state&BP_MASK)
+             filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+         if (filter_state&HIGH_MASK)
+             filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+
 
         write_audio_sample((int16_t)filtered_sample);
     }
-    else if ((dipAll&STATE_MASK) == 1)
+    else if (state == 1)
     {
         playback_sample = s16;
         buffer[write_index] = s16;

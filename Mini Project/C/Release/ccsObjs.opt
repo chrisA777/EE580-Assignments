@@ -1,0 +1,6 @@
+"./framework.obj"
+"./maincfg.obj"
+"./maincfg_c.obj"
+"./main_optimised.obj"
+-l"./maincfg.cmd"
+-llibc.a
