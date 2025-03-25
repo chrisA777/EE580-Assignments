@@ -28,28 +28,33 @@ grid on;
 
 % Filter activation flags
 useLowPass = true;
-useBandPass = false;
-useHighPass = false;
+useBandPass = true;
+useHighPass = true;
 
 % Low-pass filter design (Butterworth)
+lp = zeros(size(noise));
+bp = zeros(size(noise));
+hp = zeros(size(noise));
+
 if useLowPass
-    noise = filter(b_low, a_low, noise);
+    lp = filter(b_low, a_low, noise);
 end
 
 % Band-pass filter design (Butterworth)
 if useBandPass
-    noise = filter(b_bp, a_bp, noise);
+    bp = filter(b_bp, a_bp, noise);
 end
 
 % High-pass filter design (Butterworth)
 if useHighPass
-    noise = filter(b_high, a_high, noise);
+    hp = filter(b_high, a_high, noise);
 end
 
+output = lp+bp+hp;
 % Frequency domain representation
-N = length(noise);
+N = length(output);
 f = fs * (0:(N/2)) / N;
-Y = fft(noise);
+Y = fft(output);
 P2 = abs(Y / N);
 P1 = P2(1:N/2+1);
 P1(2:end-1) = 2 * P1(2:end-1);

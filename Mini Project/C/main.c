@@ -1,4 +1,5 @@
 //#include "hellocfg.h"
+#include <std.h>
 #include "stdio.h"
 #include <stdlib.h>
 #include "types.h"
@@ -11,6 +12,7 @@
 #include "maincfg.h"
 //#include "data.h"
 #include "data_sos.h"
+#include "clk.h"
 
 /*
  *  ======== main ========
@@ -29,43 +31,37 @@
 
 uint8_t filter_state = 0;
 
-int16_t buffer[BUFFER_SIZE];     // Circular buffer
-uint16_t write_index = 0;        // Buffer write pointer
-uint16_t read_index = 0;         // Buffer read pointer
+volatile int16_t buffer[BUFFER_SIZE];     // Circular buffer
+volatile uint16_t write_index = 0;        // Buffer write pointer
+volatile uint16_t read_index = 0;         // Buffer read pointer
 
-// filter memory
+volatile uint8_t state = 0; //0: off, 1: recording, 2: filtering
 
-#define MAX_FILTER_LENGTH 33
+//volatile float w_low[NUM_BIQUADS_LOW];
+//volatile float w_bp[NUM_BIQUADS_BP];
+//volatile float w_high[NUM_BIQUADS_HIGH];
 
-float y_history[MAX_FILTER_LENGTH] = {0.0};   // past outputs
-float x_history[MAX_FILTER_LENGTH] = {0.0};   // past inputs
-
-float B[MAX_FILTER_LENGTH] = {0.0};
-float A[MAX_FILTER_LENGTH] = {0.0};
-
-uint8_t state = 0; //0: off, 1: recording, 2: filtering
-float playback_sample;
-float filtered_sample;
+volatile float w_low[20];
+volatile float w_bp[20];
+volatile float w_high[20];
 
 
-float w_low[NUM_BIQUADS_LOW] = {0.0};
-float w_bp[NUM_BIQUADS_BP] = {0.0};
-float w_high[NUM_BIQUADS_HIGH] = {0.0};
+volatile int16_t s16;
+volatile float filtered_sample;
+volatile float playback_sample;
+volatile float lp, bp, hp;
+
+//LgUns startTime, endTime, duration;
 
 void main(void)
 {
     // Ensure all elements in history arrays are set to zero
-    memset(y_history, 0, sizeof(y_history));
-    memset(x_history, 0, sizeof(x_history));
-
     memset(w_low, 0, sizeof(w_low));
     memset(w_bp, 0, sizeof(w_bp));
     memset(w_high, 0, sizeof(w_high));
 
-    memset(B, 0, sizeof(B));
-    memset(A, 0, sizeof(A));
-
     initAll();
+//    LOG_printf(&trace, "starting");
     /* fall into DSP/BIOS idle loop */
     return;
 }
@@ -76,49 +72,47 @@ void dipPRD(void)
     // Can we get DIP status with HWI??
     uint8_t dip_status1;
     uint8_t dip_status2;
-    uint8_t dip_status6;
-    uint8_t dip_status7;
-    uint8_t dip_status8;
+//    uint8_t dip_status6;
+//    uint8_t dip_status7;
+//    uint8_t dip_status8;
 
     DIP_get(DIP_1, &dip_status1);
     DIP_get(DIP_2, &dip_status2);
-    DIP_get(DIP_6, &dip_status6);
-    DIP_get(DIP_7, &dip_status7);
-    DIP_get(DIP_8, &dip_status8);
+//    DIP_get(DIP_6, &dip_status6);
+//    DIP_get(DIP_7, &dip_status7);
+//    DIP_get(DIP_8, &dip_status8);
 
     if (dip_status1)
     {
         if (dip_status2)
         {
-            state =2;
+            state = 2;
 
-
-
-            if (dip_status6)
-            {
-                filter_state |= LOW_MASK;
-            }
-            else
-            {
-                filter_state &= ~LOW_MASK;
-            }
-
-            if (dip_status7)
-            {
-                filter_state |= BP_MASK;
-            }
-            else
-            {
-                filter_state &= ~BP_MASK;
-            }
-            if (dip_status8)
-            {
-                filter_state |= HIGH_MASK;
-            }
-            else
-            {
-                filter_state &= ~HIGH_MASK;
-            }
+//            if (dip_status6)
+//            {
+//                filter_state |= LOW_MASK;
+//            }
+//            else
+//            {
+//                filter_state &= ~LOW_MASK;
+//            }
+//
+//            if (dip_status7)
+//            {
+//                filter_state |= BP_MASK;
+//            }
+//            else
+//            {
+//                filter_state &= ~BP_MASK;
+//            }
+//            if (dip_status8)
+//            {
+//                filter_state |= HIGH_MASK;
+//            }
+//            else
+//            {
+//                filter_state &= ~HIGH_MASK;
+//            }
 
         }
         else
@@ -131,9 +125,9 @@ void dipPRD(void)
         state = 0;
     }
 
-    if (state==2){
-        LED_toggle(LED_1);
-    }
+//    if (state==2){
+//        LED_toggle(LED_1);
+//    }
 }
 
 void ledPRD_20Hz(void)
@@ -158,15 +152,15 @@ void ledPRD_6Hz(void){
  * OR just pass pointer to correct point in array for b,a and w
  *
  */
-float apply_biquad_filter(float *b, float *a, float *w, float gain, float x)
+float apply_biquad_filter(float *b, float *a,  volatile float *w, float gain, volatile float x)
 {
-    //x *= gain;
+    x *= gain;
     float w0 = x - a[1]*w[0] - a[2]*w[1];
     float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
 
     w[1] = w[0];
     w[0] = w0;
-    y *= gain;
+//    y *= gain;
     return y;
 }
 
@@ -180,11 +174,11 @@ float apply_biquad_filter(float *b, float *a, float *w, float gain, float x)
  * - x is the input sample
  */
 
-float apply_sos_IIR_filter(float *b, float *a, float *w, float *G, int N, float x)
+float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int N, volatile float x)
 {
     int i;
     float y;
-    for (i=1;i<N;i++)
+    for (i=0;i<N;i++)
     {
         y = apply_biquad_filter(b+(3*i), a+(3*i), w+(2*i), G[i], x);
         x = y;
@@ -195,79 +189,88 @@ float apply_sos_IIR_filter(float *b, float *a, float *w, float *G, int N, float 
 
 void filterSWI0(void)  // SWI0
 {
-    if (filter_state & LOW_MASK)
+
+    if (state == 0)
     {
-        filtered_sample = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, filtered_sample);
+        playback_sample = 0;
     }
-
-
-    SWI_post(&SWI1);  // Move to next filter
+    else if (state == 1)
+    {
+        playback_sample = s16;
+        buffer[write_index] = s16;
+        write_index = (write_index + 1) % BUFFER_SIZE;
+    }
+    else
+    {
+        filtered_sample = 0;
+        playback_sample = (float)buffer[read_index];
+        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
+        SWI_post(&SWI1);
+        SWI_post(&SWI2);
+        filtered_sample = lp;
+    }
 }
 
-void filterSWI1(void)  // SWI1
+void filterSWI1(void)
 {
-    if (filter_state & BP_MASK)
-    {
-        filtered_sample = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, filtered_sample);
-    }
-
-
-    SWI_post(&SWI2);  // Move to next filter
+    lp = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+//    int x = playback_sample;
+//    int i;
+//    float y;
+//    for (i=0;i<NUM_BIQUADS_LOW;i++)
+//    {
+////        y = apply_biquad_filter(IIR_low_B+(3*i), IIR_low_A+(3*i), w_low+(2*i), IIR_low_G[i], x);
+//        x *= IIR_low_G[i];
+//        float w0 = x - (IIR_low_A+(3*i))[1]*(w_low+(2*i))[0] - (IIR_low_A+(3*i))[2]*(w_low+(2*i))[1];
+//        y = (IIR_low_B+(3*i))[0]*w0 + (IIR_low_B+(3*i))[1]*(w_low+(2*i))[0] + (IIR_low_B+(3*i))[2]*(w_low+(2*i))[1];
+//
+//        (w_low+(2*i))[1] = (w_low+(2*i))[0];
+//        (w_low+(2*i))[0] = w0;
+//        x = y;
+//    }
+//    lp = y;
+    LOG_printf(&trace, "playback: %d, lp: %d", (int)playback_sample, (int)lp);
 }
 
-void filterSWI2(void)  // SWI2
+void filterSWI2(void)
 {
-    if (filter_state & HIGH_MASK)
-    {
-        filtered_sample = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, filtered_sample);
-    }
+    bp = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+//    hp = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+//    int x = playback_sample;
+//    int i;
+//    float y;
+//    for (i=0;i<NUM_BIQUADS_BP;i++)
+//    {
+////        y = apply_biquad_filter(IIR_low_B+(3*i), IIR_low_A+(3*i), w_low+(2*i), IIR_low_G[i], x);
+//        x *= IIR_bp_G[i];
+//        float w0 = x - (IIR_bp_A+(3*i))[1]*(w_bp+(2*i))[0] - (IIR_bp_A+(3*i))[2]*(w_bp+(2*i))[1];
+//        y = (IIR_bp_B+(3*i))[0]*w0 + (IIR_bp_B+(3*i))[1]*(w_bp+(2*i))[0] + (IIR_bp_B+(3*i))[2]*(w_bp+(2*i))[1];
+//
+//        (w_bp+(2*i))[1] = (w_bp+(2*i))[0];
+//        (w_bp+(2*i))[0] = w0;
+//        x = y;
+//    }
+////    y *= IIR_bp_G[i];
+//    bp = y;
 
-    if (filtered_sample > 32767.0f)
-        filtered_sample = 32767.0f;
-    else if (filtered_sample < -32768.0f)
-        filtered_sample = -32768.0f;
-
-
-    // Output final result
-    write_audio_sample((int16_t)filtered_sample);
+    LOG_printf(&trace,"playback: %d, bp: %d", (int)playback_sample, (int)bp);
+//    hp = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 }
-
 
 
 void audioHWI(void)
 {
-    int16_t s16;
     s16 = read_audio_sample();
-
-    switch(state)
+    if (MCASP->RSLOT)
     {
-        case 0:
-            write_audio_sample(0);
-            break;
-        case 1:
-            if (MCASP->RSLOT)
-            {
-                buffer[write_index] = s16;
-                write_index = (write_index + 1) % BUFFER_SIZE;
-                write_audio_sample(s16);
-            }
-            else
-            {
-                write_audio_sample(0);
-            }
-            break;
-        case 2:
-            if (MCASP->RSLOT)
-            {
-                playback_sample = (float)buffer[read_index];
-                read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-                filtered_sample = playback_sample;
-                SWI_post(&SWI0);  // Post to SWI to handle filtering
-            }
-            else
-            {
-                write_audio_sample(0);
-            }
-            break;
+        SWI_post(&SWI0);
+        if (state == 2)
+            write_audio_sample((int16_t)filtered_sample);
+        else
+            write_audio_sample((int16_t)playback_sample);
+    }
+    else
+    {
+        write_audio_sample(0);
     }
 }
