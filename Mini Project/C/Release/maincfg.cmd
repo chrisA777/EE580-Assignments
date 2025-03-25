@@ -226,8 +226,6 @@ _EVENT127 = EVENT127;
 _PRD_swi = PRD_swi;
 _KNL_swi = KNL_swi;
 _SWI0 = SWI0;
-_SWI1 = SWI1;
-_SWI2 = SWI2;
 _TSK_idle = TSK_idle;
 _IDL_cpuLoad = IDL_cpuLoad;
 _LNK_dataPump = LNK_dataPump;
@@ -303,7 +301,7 @@ SECTIONS {
    .swi: RUN_START(SWI_A_TABBEG), RUN_END(SWI_A_TABEND) {
    } > IRAM
 }
-SWI_A_TABLEN = 5;
+SWI_A_TABLEN = 3;
 
 /* MODULE TSK */
 SECTIONS {

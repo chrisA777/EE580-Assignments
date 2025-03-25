@@ -5,7 +5,7 @@
 ;; INPUT main.cdb
 
 ;; CONFIGURATION/VERSION INFORMATION
-	.asg "Tue Mar 25 20:41:08 2025", VERS$DATE
+	.asg "Tue Mar 25 21:44:29 2025", VERS$DATE
 
 ;; PROLOGUE
 	.include maincfg.h62
@@ -66,7 +66,7 @@ HWI$NUMOF           .set 16
 HWI$SETOF           .set 0ffffH
 ECM$NUMOF           .set 124
 ECM$SETOF           .set 0ffffffffH
-SWI$NUMOF           .set 5
+SWI$NUMOF           .set 3
 SWI$SETOF           .set 00H
 TSK$NUMOF           .set 1
 TSK$SETOF           .set 00H
@@ -2210,48 +2210,6 @@ HOOK$SETOF          .set 00H
 	.asg 01H, _filtsummult
 	.asg 00H, _unittype
 	SWI_Obj 1, SWI0, 0, _function, _pri, _mailbox, _arg0, _arg1, _dorta, _Order, _filter, _maxformat, _sumformat, _avgformat, _filtmaxmult, _filtsummult, _unittype
-
-;; ======== SWI_Obj SWI1 ========
-;; <add comments here>
-;;
-;; SWI_Obj SWI1 (function, pri, mailbox, arg0, arg1, dorta, Order, filter, maxformat, sumformat, avgformat, filtmaxmult, filtsummult, unittype)
-	.global SWI1
-	.asg _filterSWI1, _function
-	.asg 02H, _pri
-	.asg 00H, _mailbox
-	.asg 00H, _arg0
-	.asg 00H, _arg1
-	.asg 01H, _dorta
-	.asg 05H, _Order
-	.asg 02H, _filter
-	.asg "%g inst", _maxformat
-	.asg "%g inst", _sumformat
-	.asg "%.2f inst", _avgformat
-	.asg 01H, _filtmaxmult
-	.asg 01H, _filtsummult
-	.asg 00H, _unittype
-	SWI_Obj 1, SWI1, 0, _function, _pri, _mailbox, _arg0, _arg1, _dorta, _Order, _filter, _maxformat, _sumformat, _avgformat, _filtmaxmult, _filtsummult, _unittype
-
-;; ======== SWI_Obj SWI2 ========
-;; <add comments here>
-;;
-;; SWI_Obj SWI2 (function, pri, mailbox, arg0, arg1, dorta, Order, filter, maxformat, sumformat, avgformat, filtmaxmult, filtsummult, unittype)
-	.global SWI2
-	.asg _filterSWI2, _function
-	.asg 02H, _pri
-	.asg 00H, _mailbox
-	.asg 00H, _arg0
-	.asg 00H, _arg1
-	.asg 01H, _dorta
-	.asg 07H, _Order
-	.asg 02H, _filter
-	.asg "%g inst", _maxformat
-	.asg "%g inst", _sumformat
-	.asg "%.2f inst", _avgformat
-	.asg 01H, _filtmaxmult
-	.asg 01H, _filtsummult
-	.asg 00H, _unittype
-	SWI_Obj 1, SWI2, 0, _function, _pri, _mailbox, _arg0, _arg1, _dorta, _Order, _filter, _maxformat, _sumformat, _avgformat, _filtmaxmult, _filtsummult, _unittype
 
 ;; ======== TSK_Obj TSK_idle ========
 ;; This is the idle task; it only runs when no other task is ready

@@ -25,8 +25,6 @@ extern far HST_Obj RTA_toHost;
 extern far SWI_Obj PRD_swi;
 extern far SWI_Obj KNL_swi;
 extern far SWI_Obj SWI0;
-extern far SWI_Obj SWI1;
-extern far SWI_Obj SWI2;
 extern far TSK_Obj TSK_idle;
 extern far LOG_Obj LOG_system;
 extern far LOG_Obj trace;
