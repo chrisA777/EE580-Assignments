@@ -34,8 +34,12 @@
 #define DIP_7_MASK (1<<DIP_7)
 #define DIP_8_MASK (1<<DIP_8)
 
-#define STATE_1_MASK 1
-#define STATE_2_MASK 3
+#define STATE_MASK 3
+#define FILTERS_MASK 224
+#define STATE_0 0
+#define STATE_1 1
+#define STATE_2 3
+
 
 uint8_t filter_state = 0;
 
@@ -67,7 +71,11 @@ void main(void)
     memset(w_high, 0, sizeof(w_high));
 
     initAll();
-    LOG_printf(&trace, "State1 mask: %d, state 2 mask: %d", STATE_1_MASK, STATE_2_MASK);
+//    LOG_printf(&trace, "State1 mask: %d, state 2 mask: %d", STATE_1_MASK, STATE_2_MASK);
+    LOG_printf(&trace, "1: %d, 2: %d",DIP_1_MASK, DIP_2_MASK);
+    LOG_printf(&trace, "6: %d, 7: %d",DIP_6_MASK, DIP_7_MASK);
+    LOG_printf(&trace, "dip all: %d, state mask: %d",dipAll, dipAll&STATE_MASK);
+//    LOG_printf(&trace, "state1: %d, state2: %d",STATE_1_MASK, STATE_2_MASK);
     /* fall into DSP/BIOS idle loop */
     return;
 }
@@ -78,7 +86,9 @@ void dipPRD(void)
 //    startTime = CLK_gethtime();
 
     DIP_getAll(&dipAll);
-//    LOG_printf(&trace, "Ticks: %d", dipAll);
+    dipAll = ~dipAll;
+//    LOG_printf(&trace, "DIP ALL: %d", (dipAll&DIP_1_MASK)==DIP_1_MASK);
+//    LOG_printf(&trace, "dip all: %d, state mask: %d",dipAll, dipAll&STATE_MASK);
 
 //    endTime = CLK_gethtime();
 //    duration = endTime-startTime;
@@ -86,13 +96,30 @@ void dipPRD(void)
 
 //    LOG_printf(&trace, "Ticks: %d, %d", dipAll, DIP_1_MASK);
 
-    if ((~dipAll)&STATE_2_MASK == STATE_2_MASK)
+//    if (dipAll&DIP_1_MASK)
+//    {
+//        if (dipAll&DIP_2_MASK)
+//        {
+//            state = 2;
+//            LED_toggle(LED_1);
+//        }
+//        else
+//        {
+//            state = 1;
+//        }
+//    }
+//    else
+//    {
+//        state = 0;
+//    }
+
+    if ((dipAll&STATE_MASK) == 3)
         LED_toggle(LED_1);
 }
 
 void ledPRD_20Hz(void)
 {
-    if ((~dipAll)&STATE_1_MASK == STATE_1_MASK)
+    if ((dipAll&STATE_MASK) == 1)
     {
         LED_toggle(LED_1);
         LED_toggle(LED_2);
@@ -101,7 +128,8 @@ void ledPRD_20Hz(void)
 
 void ledPRD_6Hz(void)
 {
-    if ((~dipAll)&STATE_2_MASK == STATE_1_MASK && (~dipAll) & DIP_6_MASK & DIP_7_MASK & DIP_8_MASK)  // At least one filter is active
+//    LOG_printf(&trace,"6hz: %d", (FILTERS_MASK & dipAll));
+    if (((dipAll&STATE_MASK) == 3) && (FILTERS_MASK & dipAll) > 0)  // At least one filter is active
     {
         LED_toggle(LED_2);
     }
@@ -150,7 +178,7 @@ float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int
 void filterSWI0(void)  // SWI0
 {
     filtered_sample = 0;
-    if ((~dipAll)&STATE_2_MASK == STATE_2_MASK)
+    if ((dipAll&STATE_MASK) == 3)
     {
         filtered_sample = 0;
         playback_sample = (float)buffer[read_index];
@@ -158,16 +186,16 @@ void filterSWI0(void)  // SWI0
 //        SWI_post(&SWI1);
 //        SWI_post(&SWI2);
 
-        if ((~dipAll)&DIP_6_MASK)
+        if (dipAll&DIP_6_MASK)
             filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-        if ((~dipAll)&DIP_7_MASK)
+        if (dipAll&DIP_7_MASK)
             filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
-        if ((~dipAll)&DIP_8_MASK)
+        if (dipAll&DIP_8_MASK)
             filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 
         write_audio_sample((int16_t)filtered_sample);
     }
-    else if ((~dipAll)&STATE_1_MASK == STATE_2_MASK)
+    else if ((dipAll&STATE_MASK) == 1)
     {
         playback_sample = s16;
         buffer[write_index] = s16;
