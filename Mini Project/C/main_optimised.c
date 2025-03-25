@@ -11,7 +11,7 @@
 #include "framework.h"
 #include "maincfg.h"
 //#include "data.h"
-#include "data_sos.h"
+#include "data_sos_2.h"
 #include "clk.h"
 
 /*
@@ -20,9 +20,9 @@
 
 #define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
 
-#define NUM_BIQUADS_LOW 15
-#define NUM_BIQUADS_BP 16
-#define NUM_BIQUADS_HIGH 8
+#define NUM_BIQUADS_LOW 4
+#define NUM_BIQUADS_BP 8
+#define NUM_BIQUADS_HIGH 4
 
 #define LOW_MASK (1 << 0)  // 0b0001
 #define BP_MASK (1 << 1)  // 0b0010
@@ -221,6 +221,7 @@ float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int
 
 void filterSWI0(void)  // SWI0
 {
+    startTime = CLK_gethtime();
     filtered_sample = 0;
     if (state == 2)
     {
@@ -260,19 +261,10 @@ void filterSWI0(void)  // SWI0
         write_audio_sample((int16_t)playback_sample);
     }
 //    LOG_printf(&trace, "playback: %d, filtered: %d", (int)playback_sample, (int)filtered_sample);
-}
 
-void filterSWI1(void)
-{
-//    lp = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-//    LOG_printf(&trace, "playback: %d, lp: %d", (int)playback_sample, (int)lp);
-}
-
-void filterSWI2(void)
-{
-//    bp = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
-//    LOG_printf(&trace,"playback: %d, bp: %d", (int)playback_sample, (int)bp);
-//    hp = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+    endTime = CLK_gethtime();
+    duration = endTime-startTime;
+    LOG_printf(&trace, "Ticks: %d", duration);
 }
 
 

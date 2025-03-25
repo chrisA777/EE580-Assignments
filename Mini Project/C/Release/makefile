@@ -15,6 +15,7 @@ ORDERED_OBJS += \
 "./maincfg_c.obj" \
 "./main_optimised.obj" \
 $(GEN_CMDS__FLAG) \
+-l"C:/ti/c6748/bsl/lib/evmc6748_bsl.lib" \
 -llibc.a \
 
 -include ../makefile.init
