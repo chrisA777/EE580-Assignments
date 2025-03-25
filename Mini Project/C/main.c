@@ -68,15 +68,15 @@ void dipPRD(void)
     // Can we get DIP status with HWI??
     uint8_t dip_status1;
     uint8_t dip_status2;
-//    uint8_t dip_status6;
-//    uint8_t dip_status7;
-//    uint8_t dip_status8;
+    uint8_t dip_status6;
+    uint8_t dip_status7;
+    uint8_t dip_status8;
 
     DIP_get(DIP_1, &dip_status1);
     DIP_get(DIP_2, &dip_status2);
-//    DIP_get(DIP_6, &dip_status6);
-//    DIP_get(DIP_7, &dip_status7);
-//    DIP_get(DIP_8, &dip_status8);
+    DIP_get(DIP_6, &dip_status6);
+    DIP_get(DIP_7, &dip_status7);
+    DIP_get(DIP_8, &dip_status8);
 
     if (dip_status1)
     {
@@ -84,31 +84,31 @@ void dipPRD(void)
         {
             state = 2;
 
-//            if (dip_status6)
-//            {
-//                filter_state |= LOW_MASK;
-//            }
-//            else
-//            {
-//                filter_state &= ~LOW_MASK;
-//            }
-//
-//            if (dip_status7)
-//            {
-//                filter_state |= BP_MASK;
-//            }
-//            else
-//            {
-//                filter_state &= ~BP_MASK;
-//            }
-//            if (dip_status8)
-//            {
-//                filter_state |= HIGH_MASK;
-//            }
-//            else
-//            {
-//                filter_state &= ~HIGH_MASK;
-//            }
+            if (dip_status6)
+            {
+                filter_state |= LOW_MASK;
+            }
+            else
+            {
+                filter_state &= ~LOW_MASK;
+            }
+
+            if (dip_status7)
+            {
+                filter_state |= BP_MASK;
+            }
+            else
+            {
+                filter_state &= ~BP_MASK;
+            }
+            if (dip_status8)
+            {
+                filter_state |= HIGH_MASK;
+            }
+            else
+            {
+                filter_state &= ~HIGH_MASK;
+            }
 
         }
         else
@@ -121,9 +121,9 @@ void dipPRD(void)
         state = 0;
     }
 
-//    if (state==2){
-//        LED_toggle(LED_1);
-//    }
+    if (state==2){
+        LED_toggle(LED_1);
+    }
 }
 
 void ledPRD_20Hz(void)
@@ -185,7 +185,7 @@ float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int
 
 void filterSWI0(void)  // SWI0
 {
-
+    filtered_sample = 0;
     if (state == 0)
     {
         playback_sample = 0;
@@ -203,56 +203,30 @@ void filterSWI0(void)  // SWI0
         filtered_sample = 0;
         playback_sample = (float)buffer[read_index];
         read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-        SWI_post(&SWI1);
-        SWI_post(&SWI2);
-        filtered_sample = lp+bp;
+//        SWI_post(&SWI1);
+//        SWI_post(&SWI2);
+
+        if (filter_state & LOW_MASK)
+            filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+        if (filter_state & BP_MASK)
+            filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+        if (filter_state & HIGH_MASK)
+            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+
         write_audio_sample((int16_t)filtered_sample);
     }
 }
 
 void filterSWI1(void)
 {
-    lp = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-//    int x = playback_sample;
-//    int i;
-//    float y;
-//    for (i=0;i<NUM_BIQUADS_LOW;i++)
-//    {
-////        y = apply_biquad_filter(IIR_low_B+(3*i), IIR_low_A+(3*i), w_low+(2*i), IIR_low_G[i], x);
-//        x *= IIR_low_G[i];
-//        float w0 = x - (IIR_low_A+(3*i))[1]*(w_low+(2*i))[0] - (IIR_low_A+(3*i))[2]*(w_low+(2*i))[1];
-//        y = (IIR_low_B+(3*i))[0]*w0 + (IIR_low_B+(3*i))[1]*(w_low+(2*i))[0] + (IIR_low_B+(3*i))[2]*(w_low+(2*i))[1];
-//
-//        (w_low+(2*i))[1] = (w_low+(2*i))[0];
-//        (w_low+(2*i))[0] = w0;
-//        x = y;
-//    }
-//    lp = y;
-    LOG_printf(&trace, "playback: %d, lp: %d", (int)playback_sample, (int)lp);
+//    lp = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+//    LOG_printf(&trace, "playback: %d, lp: %d", (int)playback_sample, (int)lp);
 }
 
 void filterSWI2(void)
 {
-    bp = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
-//    hp = apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-//    int x = playback_sample;
-//    int i;
-//    float y;
-//    for (i=0;i<NUM_BIQUADS_BP;i++)
-//    {
-////        y = apply_biquad_filter(IIR_low_B+(3*i), IIR_low_A+(3*i), w_low+(2*i), IIR_low_G[i], x);
-//        x *= IIR_bp_G[i];
-//        float w0 = x - (IIR_bp_A+(3*i))[1]*(w_bp+(2*i))[0] - (IIR_bp_A+(3*i))[2]*(w_bp+(2*i))[1];
-//        y = (IIR_bp_B+(3*i))[0]*w0 + (IIR_bp_B+(3*i))[1]*(w_bp+(2*i))[0] + (IIR_bp_B+(3*i))[2]*(w_bp+(2*i))[1];
-//
-//        (w_bp+(2*i))[1] = (w_bp+(2*i))[0];
-//        (w_bp+(2*i))[0] = w0;
-//        x = y;
-//    }
-////    y *= IIR_bp_G[i];
-//    bp = y;
-
-    LOG_printf(&trace,"playback: %d, bp: %d", (int)playback_sample, (int)bp);
+//    bp = apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+//    LOG_printf(&trace,"playback: %d, bp: %d", (int)playback_sample, (int)bp);
 //    hp = apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 }
 
