@@ -37,13 +37,9 @@ volatile uint16_t read_index = 0;         // Buffer read pointer
 
 volatile uint8_t state = 0; //0: off, 1: recording, 2: filtering
 
-//volatile float w_low[NUM_BIQUADS_LOW];
-//volatile float w_bp[NUM_BIQUADS_BP];
-//volatile float w_high[NUM_BIQUADS_HIGH];
-
-volatile float w_low[20];
-volatile float w_bp[20];
-volatile float w_high[20];
+volatile float w_low[2*NUM_BIQUADS_LOW];
+volatile float w_bp[2*NUM_BIQUADS_BP];
+volatile float w_high[2*NUM_BIQUADS_HIGH];
 
 
 volatile int16_t s16;
@@ -193,12 +189,14 @@ void filterSWI0(void)  // SWI0
     if (state == 0)
     {
         playback_sample = 0;
+        write_audio_sample((int16_t)playback_sample);
     }
     else if (state == 1)
     {
         playback_sample = s16;
         buffer[write_index] = s16;
         write_index = (write_index + 1) % BUFFER_SIZE;
+        write_audio_sample((int16_t)playback_sample);
     }
     else
     {
@@ -207,7 +205,8 @@ void filterSWI0(void)  // SWI0
         read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
         SWI_post(&SWI1);
         SWI_post(&SWI2);
-        filtered_sample = lp;
+        filtered_sample = lp+bp;
+        write_audio_sample((int16_t)filtered_sample);
     }
 }
 
@@ -264,10 +263,10 @@ void audioHWI(void)
     if (MCASP->RSLOT)
     {
         SWI_post(&SWI0);
-        if (state == 2)
-            write_audio_sample((int16_t)filtered_sample);
-        else
-            write_audio_sample((int16_t)playback_sample);
+//        if (state == 2)
+//            write_audio_sample((int16_t)filtered_sample);
+//        else
+//            write_audio_sample((int16_t)playback_sample);
     }
     else
     {

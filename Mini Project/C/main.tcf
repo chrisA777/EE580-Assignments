@@ -105,6 +105,15 @@ bios.SWI.instance("SWI2").priority = 1;
 bios.MEM.STACKSIZE = 0x10000;
 bios.SWI.instance("SWI1").priority = 2;
 bios.SWI.instance("SWI2").priority = 2;
+bios.SWI.instance("SWI0").priority = 14;
+bios.PRD.create("ledFlash_20Hz");
+bios.PRD.instance("ledFlash_20Hz").order = 2;
+bios.PRD.instance("ledFlash_20Hz").period = 50;
+bios.PRD.instance("ledFlash_20Hz").fxn = prog.extern("ledPRD_20Hz");
+bios.PRD.create("ledFlash_6Hz");
+bios.PRD.instance("ledFlash_6Hz").order = 3;
+bios.PRD.instance("ledFlash_6Hz").period = 167;
+bios.PRD.instance("ledFlash_6Hz").fxn = prog.extern("led_PRD_6Hz");
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {
