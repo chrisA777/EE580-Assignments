@@ -28,6 +28,14 @@
 #define BP_MASK (1 << 1)  // 0b0010
 #define HIGH_MASK (1 << 2)  // 0b0100
 
+#define DIP_1_MASK (1<<DIP_1)
+#define DIP_2_MASK (1<<DIP_2)
+#define DIP_6_MASK (1<<DIP_6)
+#define DIP_7_MASK (1<<DIP_7)
+#define DIP_8_MASK (1<<DIP_8)
+
+#define STATE_1_MASK 1
+#define STATE_2_MASK 3
 
 uint8_t filter_state = 0;
 
@@ -47,6 +55,8 @@ volatile float filtered_sample;
 volatile float playback_sample;
 volatile float lp, bp, hp;
 
+uint32_t dipAll;
+
 LgUns startTime, endTime, duration;
 
 void main(void)
@@ -57,7 +67,7 @@ void main(void)
     memset(w_high, 0, sizeof(w_high));
 
     initAll();
-//    LOG_printf(&trace, "starting");
+    LOG_printf(&trace, "State1 mask: %d, state 2 mask: %d", STATE_1_MASK, STATE_2_MASK);
     /* fall into DSP/BIOS idle loop */
     return;
 }
@@ -65,88 +75,33 @@ void main(void)
 
 void dipPRD(void)
 {
-    startTime = CLK_gethtime();
-    // Can we get DIP status with HWI??
-    uint8_t dip_status1;
-    uint8_t dip_status2;
-    uint8_t dip_status6;
-    uint8_t dip_status7;
-    uint8_t dip_status8;
+//    startTime = CLK_gethtime();
 
-    DIP_get(DIP_1, &dip_status1);
-    DIP_get(DIP_2, &dip_status2);
-    DIP_get(DIP_6, &dip_status6);
-    DIP_get(DIP_7, &dip_status7);
-    DIP_get(DIP_8, &dip_status8);
+    DIP_getAll(&dipAll);
+//    LOG_printf(&trace, "Ticks: %d", dipAll);
 
-//    uint32_t dipAll;
-//    DIP_getAll(&dipAll);
+//    endTime = CLK_gethtime();
+//    duration = endTime-startTime;
+//    LOG_printf(&trace, "Ticks: %d", duration);
 
-    endTime = CLK_gethtime();
-    duration = endTime-startTime;
-    LOG_printf(&trace, "Ticks: %d", duration);
+//    LOG_printf(&trace, "Ticks: %d, %d", dipAll, DIP_1_MASK);
 
-//    if (dip_status1)
-//    {
-//        if (dip_status2)
-//        {
-//            state = 2;
-//
-//            if (dip_status6)
-//            {
-//                filter_state |= LOW_MASK;
-//            }
-//            else
-//            {
-//                filter_state &= ~LOW_MASK;
-//            }
-//
-//            if (dip_status7)
-//            {
-//                filter_state |= BP_MASK;
-//            }
-//            else
-//            {
-//                filter_state &= ~BP_MASK;
-//            }
-//            if (dip_status8)
-//            {
-//                filter_state |= HIGH_MASK;
-//            }
-//            else
-//            {
-//                filter_state &= ~HIGH_MASK;
-//            }
-//
-//        }
-//        else
-//        {
-//            state = 1;
-//        }
-//    }
-//    else
-//    {
-//        state = 0;
-//    }
-//
-//
-//    if (state==2){
-//        LED_toggle(LED_1);
-//    }
+    if ((~dipAll)&STATE_2_MASK == STATE_2_MASK)
+        LED_toggle(LED_1);
 }
 
 void ledPRD_20Hz(void)
 {
-    if (state == 1)
+    if ((~dipAll)&STATE_1_MASK == STATE_1_MASK)
     {
         LED_toggle(LED_1);
         LED_toggle(LED_2);
     }
 }
 
-void ledPRD_6Hz(void){
-
-    if (state == 2 && filter_state != 0)  // At least one filter is active
+void ledPRD_6Hz(void)
+{
+    if ((~dipAll)&STATE_2_MASK == STATE_1_MASK && (~dipAll) & DIP_6_MASK & DIP_7_MASK & DIP_8_MASK)  // At least one filter is active
     {
         LED_toggle(LED_2);
     }
@@ -195,12 +150,24 @@ float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int
 void filterSWI0(void)  // SWI0
 {
     filtered_sample = 0;
-    if (state == 0)
+    if ((~dipAll)&STATE_2_MASK == STATE_2_MASK)
     {
-        playback_sample = 0;
-        write_audio_sample((int16_t)playback_sample);
+        filtered_sample = 0;
+        playback_sample = (float)buffer[read_index];
+        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
+//        SWI_post(&SWI1);
+//        SWI_post(&SWI2);
+
+        if ((~dipAll)&DIP_6_MASK)
+            filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+        if ((~dipAll)&DIP_7_MASK)
+            filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+        if ((~dipAll)&DIP_8_MASK)
+            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+
+        write_audio_sample((int16_t)filtered_sample);
     }
-    else if (state == 1)
+    else if ((~dipAll)&STATE_1_MASK == STATE_2_MASK)
     {
         playback_sample = s16;
         buffer[write_index] = s16;
@@ -209,20 +176,8 @@ void filterSWI0(void)  // SWI0
     }
     else
     {
-        filtered_sample = 0;
-        playback_sample = (float)buffer[read_index];
-        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-//        SWI_post(&SWI1);
-//        SWI_post(&SWI2);
-
-        if (filter_state & LOW_MASK)
-            filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
-        if (filter_state & BP_MASK)
-            filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
-        if (filter_state & HIGH_MASK)
-            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
-
-        write_audio_sample((int16_t)filtered_sample);
+        playback_sample = 0;
+        write_audio_sample((int16_t)playback_sample);
     }
 //    LOG_printf(&trace, "playback: %d, filtered: %d", (int)playback_sample, (int)filtered_sample);
 }
@@ -246,12 +201,12 @@ void audioHWI(void)
     s16 = read_audio_sample();
     if (MCASP->RSLOT)
     {
-//        SWI_post(&SWI0);
+        SWI_post(&SWI0);
 //        if (state == 2)
 //            write_audio_sample((int16_t)filtered_sample);
 //        else
 //            write_audio_sample((int16_t)playback_sample);
-        write_audio_sample(0);
+//        write_audio_sample(0);
     }
     else
     {

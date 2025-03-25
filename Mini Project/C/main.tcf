@@ -115,6 +115,8 @@ bios.PRD.instance("ledFlash_6Hz").order = 3;
 bios.PRD.instance("ledFlash_6Hz").period = 167;
 bios.PRD.instance("ledFlash_6Hz").fxn = prog.extern("led_PRD_6Hz");
 bios.PRD.instance("ledFlash_6Hz").fxn = prog.extern("ledPRD_6Hz");
+bios.SWI.instance("SWI0").priority = 1;
+bios.SWI.instance("SWI0").priority = 14;
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {
