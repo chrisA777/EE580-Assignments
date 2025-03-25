@@ -11,6 +11,7 @@
 #include "framework.h"
 #include "maincfg.h"
 //#include "data.h"
+//#include "data_sos.h"
 #include "data_sos_2.h"
 #include "clk.h"
 
@@ -18,7 +19,12 @@
  *  ======== main ========
  */
 
-#define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
+//#define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
+#define BUFFER_SIZE 32767
+
+//#define NUM_BIQUADS_LOW 15
+//#define NUM_BIQUADS_BP 16
+//#define NUM_BIQUADS_HIGH 8
 
 #define NUM_BIQUADS_LOW 4
 #define NUM_BIQUADS_BP 8
@@ -227,7 +233,8 @@ void filterSWI0(void)  // SWI0
     {
         filtered_sample = 0;
         playback_sample = (float)buffer[read_index];
-        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
+//        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
+        read_index = (read_index + 1) & BUFFER_SIZE;  // Wrap around if needed
 //        SWI_post(&SWI1);
 //        SWI_post(&SWI2);
 
@@ -252,7 +259,8 @@ void filterSWI0(void)  // SWI0
     {
         playback_sample = s16;
         buffer[write_index] = s16;
-        write_index = (write_index + 1) % BUFFER_SIZE;
+//        write_index = (write_index + 1) % BUFFER_SIZE;
+        write_index = (write_index + 1) & BUFFER_SIZE;
         write_audio_sample((int16_t)playback_sample);
     }
     else
