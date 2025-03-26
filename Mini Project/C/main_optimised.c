@@ -12,7 +12,7 @@
 #include "maincfg.h"
 //#include "data.h"
 //#include "data_sos.h"
-#include "data_sos_v2.h"
+#include "data_sos_q14.h"
 #include "clk.h"
 
 /*
@@ -21,10 +21,11 @@
 
 //#define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
 #define BUFFER_SIZE 32767
+//#define BUFFER_SIZE_2 16383
 
-//#define NUM_BIQUADS_LOW 15
-//#define NUM_BIQUADS_BP 16
-//#define NUM_BIQUADS_HIGH 8
+#define Q14_SHIFT 14
+#define INT16_MAX_VAL 32767
+#define INT16_MIN_VAL -32768
 
 #define NUM_BIQUADS_LOW 7
 #define NUM_BIQUADS_BP 8
@@ -49,15 +50,19 @@
 
 uint8_t filter_state = 0;
 
-volatile int16_t buffer[BUFFER_SIZE];     // Circular buffer
-volatile uint16_t write_index = 0;        // Buffer write pointer
-volatile uint16_t read_index = 0;         // Buffer read pointer
+volatile int16_t buffer[BUFFER_SIZE];           // Circular buffer
+//volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
+volatile uint16_t write_index = 0;              // Circular Buffer write pointer
+//volatile uint16_t write_index_2 = 0;
+volatile uint16_t read_index = 0;               // Buffer read pointer
 
 volatile uint8_t state = 0; //0: off, 1: recording, 2: filtering
 
-volatile float w_low[2*NUM_BIQUADS_LOW];
-volatile float w_bp[2*NUM_BIQUADS_BP];
-volatile float w_high[2*NUM_BIQUADS_HIGH];
+
+volatile int32_t w_low[2 * NUM_BIQUADS_LOW];
+volatile int32_t w_bp[2 * NUM_BIQUADS_BP];
+volatile int32_t w_high[2 * NUM_BIQUADS_HIGH];
+
 
 
 volatile int16_t s16;
@@ -190,35 +195,49 @@ void ledPRD_6Hz(void)
  * OR just pass pointer to correct point in array for b,a and w
  *
  */
-float apply_biquad_filter(float *b, float *a,  volatile float *w, float gain, volatile float x)
-{
-    x *= gain;
-    float w0 = x - a[1]*w[0] - a[2]*w[1];
-    float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
 
+//#pragma FUNCTION_OPTIONS(apply_biquad_filter_q14, "--opt_level=3")
+int16_t apply_biquad_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int16_t gain, int16_t x)
+{
+    // need to declare new vara which are 32 bit instead now
+    // Q14 * Q14 = Q28 (2^28)
+    int32_t x_scaled = ((int32_t)x * gain) >> Q14_SHIFT; // shift right to bring back to q14 scale (/2^14)
+
+    int32_t w0 = x_scaled
+                 - ((int32_t)a[1] * w[0] >> Q14_SHIFT)
+                 - ((int32_t)a[2] * w[1] >> Q14_SHIFT);
+
+    // Compute output
+    int32_t y = ((int32_t)b[0] * w0 >> Q14_SHIFT)
+              + ((int32_t)b[1] * w[0] >> Q14_SHIFT)
+              + ((int32_t)b[2] * w[1] >> Q14_SHIFT);
+
+    // Update delay registers
     w[1] = w[0];
     w[0] = w0;
-//    y *= gain;
-    return y;
+
+    // Saturate results
+    if (y > INT16_MAX_VAL)
+        y = INT16_MAX_VAL;
+    else if (y < INT16_MIN_VAL)
+        y = INT16_MIN_VAL;
+
+    return (int16_t)y;
 }
 
-/*
- * Where:
- * - b is a (1xN*3) array of all coefficients
- * - a is a (1xN*3) array of all coefficients
- * - w is a (1xN*2) array of all stored w values
- * - G is a (1xN) array of all gains
- * - N is the total number of biquads in cascade
- * - x is the input sample
- */
-
-float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int N, volatile float x)
+// Stays the same
+//#pragma FUNCTION_OPTIONS(apply_sos_IIR_filter_q14, "--opt_level=3")
+int16_t apply_sos_IIR_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int16_t *G, int N, int16_t x)
 {
     int i;
-    float y;
-    for (i=0;i<N;i++)
+    int16_t y = 0;
+    #pragma UNROLL(8)
+    #pragma MUST_ITERATE(7, 8, 1)
+    //#pragma LOOP_COUNT(7, 8, 1)
+    #pragma IVDEP
+    for (i = 0; i < N; i++)
     {
-        y = apply_biquad_filter(b+(3*i), a+(3*i), w+(2*i), G[i], x);
+        y = apply_biquad_filter_q14(b + (3*i), a + (3*i), w + (2*i), G[i], x);
         x = y;
     }
 
@@ -246,13 +265,14 @@ void filterSWI0(void)  // SWI0
 //            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 
          if (filter_state & LOW_MASK)
-             filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+             filtered_sample += apply_sos_IIR_filter_q14(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
          if (filter_state&BP_MASK)
-             filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+             filtered_sample += apply_sos_IIR_filter_q14(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
          if (filter_state&HIGH_MASK)
-             filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
+             filtered_sample += apply_sos_IIR_filter_q14(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 
-
+        //filtered_buffer[write_index_2] = (int16_t)filtered_sample;
+        //write_index_2 = (write_index_2 + 1) & BUFFER_SIZE_2;
         write_audio_sample((int16_t)filtered_sample);
     }
     else if (state == 1)
@@ -293,3 +313,43 @@ void audioHWI(void)
         write_audio_sample(0);
     }
 }
+
+/**
+float apply_biquad_filter(float *b, float *a,  volatile float *w, float gain, volatile float x)
+{
+    x *= gain;
+    float w0 = x - a[1]*w[0] - a[2]*w[1];
+    float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
+
+    w[1] = w[0];
+    w[0] = w0;
+//    y *= gain;
+    return y;
+}
+
+
+ * Where:
+ * - b is a (1xN*3) array of all coefficients
+ * - a is a (1xN*3) array of all coefficients
+ * - w is a (1xN*2) array of all stored w values
+ * - G is a (1xN) array of all gains
+ * - N is the total number of biquads in cascade
+ * - x is the input sample
+
+
+float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int N, volatile float x)
+{
+    int i;
+    float y;
+
+    #pragma MUST_ITERATE(7, 8, 1)   // Typical biquad count
+    for (i=0;i<N;i++)
+    {
+        y = apply_biquad_filter(b+(3*i), a+(3*i), w+(2*i), G[i], x);
+        x = y;
+    }
+
+    return y;
+}
+
+**/
