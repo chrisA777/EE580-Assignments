@@ -12,7 +12,7 @@
 #include "maincfg.h"
 //#include "data.h"
 //#include "data_sos.h"
-#include "data_sos_2.h"
+#include "data_sos_v2.h"
 #include "clk.h"
 
 /*
@@ -26,9 +26,9 @@
 //#define NUM_BIQUADS_BP 16
 //#define NUM_BIQUADS_HIGH 8
 
-#define NUM_BIQUADS_LOW 4
+#define NUM_BIQUADS_LOW 7
 #define NUM_BIQUADS_BP 8
-#define NUM_BIQUADS_HIGH 4
+#define NUM_BIQUADS_HIGH 7
 
 #define LOW_MASK (1 << 0)  // 0b0001
 #define BP_MASK (1 << 1)  // 0b0010
@@ -150,7 +150,7 @@ void dipPRD(void)
             {
                 filter_state &= ~HIGH_MASK;
             }
-            LED_toggle(LED_1);
+//            LED_toggle(LED_1);
         }
         else
         {
@@ -168,20 +168,20 @@ void dipPRD(void)
 
 void ledPRD_20Hz(void)
 {
-    if (state == 1)
-    {
-        LED_toggle(LED_1);
-        LED_toggle(LED_2);
-    }
+//    if (state == 1)
+//    {
+//        LED_toggle(LED_1);
+//        LED_toggle(LED_2);
+//    }
 }
 
 void ledPRD_6Hz(void)
 {
 //    LOG_printf(&trace,"6hz: %d", (FILTERS_MASK & dipAll));
-    if (state == 2 && filter_state > 0)  // At least one filter is active
-    {
-        LED_toggle(LED_2);
-    }
+//    if (state == 2 && filter_state > 0)  // At least one filter is active
+//    {
+//        LED_toggle(LED_2);
+//    }
 
 }
 
