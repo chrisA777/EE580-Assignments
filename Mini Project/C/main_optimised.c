@@ -21,7 +21,7 @@
 
 //#define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
 #define BUFFER_SIZE 32767
-//#define BUFFER_SIZE_2 16383
+#define BUFFER_SIZE_2 16383
 
 #define Q14_SHIFT 14
 #define INT16_MAX_VAL 32767
@@ -51,9 +51,9 @@
 uint8_t filter_state = 0;
 
 volatile int16_t buffer[BUFFER_SIZE];           // Circular buffer
-//volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
+volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
 volatile uint16_t write_index = 0;              // Circular Buffer write pointer
-//volatile uint16_t write_index_2 = 0;
+volatile uint16_t write_index_2 = 0;
 volatile uint16_t read_index = 0;               // Buffer read pointer
 
 volatile uint8_t state = 0; //0: off, 1: recording, 2: filtering
@@ -234,7 +234,7 @@ int16_t apply_sos_IIR_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, in
     #pragma UNROLL(8)
     #pragma MUST_ITERATE(7, 8, 1)
     //#pragma LOOP_COUNT(7, 8, 1)
-    #pragma IVDEP
+    //#pragma IVDEP
     for (i = 0; i < N; i++)
     {
         y = apply_biquad_filter_q14(b + (3*i), a + (3*i), w + (2*i), G[i], x);
@@ -271,8 +271,8 @@ void filterSWI0(void)  // SWI0
          if (filter_state&HIGH_MASK)
              filtered_sample += apply_sos_IIR_filter_q14(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 
-        //filtered_buffer[write_index_2] = (int16_t)filtered_sample;
-        //write_index_2 = (write_index_2 + 1) & BUFFER_SIZE_2;
+        filtered_buffer[write_index_2] = (int16_t)filtered_sample;
+        write_index_2 = (write_index_2 + 1) & BUFFER_SIZE_2;
         write_audio_sample((int16_t)filtered_sample);
     }
     else if (state == 1)
