@@ -20,7 +20,7 @@
  */
 
 //#define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
-#define BUFFER_SIZE 32768
+#define BUFFER_SIZE 32767
 #define BUFFER_SIZE_2 16383
 
 #define Q14_SHIFT 14
@@ -155,7 +155,7 @@ void dipPRD(void)
             {
                 filter_state &= ~HIGH_MASK;
             }
-            LED_toggle(LED_1);
+//            LED_toggle(LED_1);
         }
         else
         {
@@ -167,25 +167,27 @@ void dipPRD(void)
         state = 0;
     }
 
-
+//    if ((dipAll&STATE_MASK) == 3)
+//        LED_toggle(LED_1);
 }
 
 void ledPRD_20Hz(void)
 {
-    if (state == 1)
-    {
-        LED_toggle(LED_1);
-        LED_toggle(LED_2);
-    }
+//    if (state == 1)
+//    {
+//        LED_toggle(LED_1);
+//        LED_toggle(LED_2);
+//    }
 }
 
 void ledPRD_6Hz(void)
 {
 //    LOG_printf(&trace,"6hz: %d", (FILTERS_MASK & dipAll));
-    if (state == 2 && filter_state > 0)  // At least one filter is active
-    {
-        LED_toggle(LED_2);
-    }
+//    if (state == 2 && filter_state > 0)  // At least one filter is active
+//    {
+//        LED_toggle(LED_2);
+//    }
+
 }
 
 
@@ -251,7 +253,16 @@ void filterSWI0(void)  // SWI0
         filtered_sample = 0;
         playback_sample = (float)buffer[read_index];
 //        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-        read_index = (read_index + 1) & (BUFFER_SIZE-1);  // Wrap around if needed
+        read_index = (read_index + 1) & BUFFER_SIZE;  // Wrap around if needed
+//        SWI_post(&SWI1);
+//        SWI_post(&SWI2);
+
+//        if (dipAll&DIP_6_MASK)
+//            filtered_sample += apply_sos_IIR_filter(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
+//        if (dipAll&DIP_7_MASK)
+//            filtered_sample += apply_sos_IIR_filter(IIR_bp_B, IIR_bp_A, w_bp, IIR_bp_G, NUM_BIQUADS_BP, playback_sample);
+//        if (dipAll&DIP_8_MASK)
+//            filtered_sample += apply_sos_IIR_filter(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 
          if (filter_state & LOW_MASK)
              filtered_sample += apply_sos_IIR_filter_q14(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
@@ -269,7 +280,7 @@ void filterSWI0(void)  // SWI0
         playback_sample = s16;
         buffer[write_index] = s16;
 //        write_index = (write_index + 1) % BUFFER_SIZE;
-        write_index = (write_index + 1) & (BUFFER_SIZE-1);
+        write_index = (write_index + 1) & BUFFER_SIZE;
         write_audio_sample((int16_t)playback_sample);
     }
     else
@@ -291,6 +302,11 @@ void audioHWI(void)
     if (MCASP->RSLOT)
     {
         SWI_post(&SWI0);
+//        if (state == 2)
+//            write_audio_sample((int16_t)filtered_sample);
+//        else
+//            write_audio_sample((int16_t)playback_sample);
+//        write_audio_sample(0);
     }
     else
     {
@@ -298,3 +314,42 @@ void audioHWI(void)
     }
 }
 
+/**
+float apply_biquad_filter(float *b, float *a,  volatile float *w, float gain, volatile float x)
+{
+    x *= gain;
+    float w0 = x - a[1]*w[0] - a[2]*w[1];
+    float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
+
+    w[1] = w[0];
+    w[0] = w0;
+//    y *= gain;
+    return y;
+}
+
+
+ * Where:
+ * - b is a (1xN*3) array of all coefficients
+ * - a is a (1xN*3) array of all coefficients
+ * - w is a (1xN*2) array of all stored w values
+ * - G is a (1xN) array of all gains
+ * - N is the total number of biquads in cascade
+ * - x is the input sample
+
+
+float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int N, volatile float x)
+{
+    int i;
+    float y;
+
+    #pragma MUST_ITERATE(7, 8, 1)   // Typical biquad count
+    for (i=0;i<N;i++)
+    {
+        y = apply_biquad_filter(b+(3*i), a+(3*i), w+(2*i), G[i], x);
+        x = y;
+    }
+
+    return y;
+}
+
+**/
