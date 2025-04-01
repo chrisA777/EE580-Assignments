@@ -1,4 +1,3 @@
-//#include "hellocfg.h"
 #include <std.h>
 #include "stdio.h"
 #include <stdlib.h>
@@ -11,7 +10,7 @@
 #include "framework.h"
 #include "maincfg.h"
 //#include "data.h"
-//#include "data_sos.h"
+//#include "data_sos_v2.h"
 #include "data_sos_q14.h"
 #include "clk.h"
 
@@ -19,8 +18,9 @@
  *  ======== main ========
  */
 
-//#define BUFFER_SIZE 32000        // 4 seconds of audio at 8kHz
+//#define BUFFER_SIZE 32000        // >4 seconds of audio at 8kHz
 #define BUFFER_SIZE 32768
+#define BUFFER_MOD 32767
 #define BUFFER_SIZE_2 16383
 
 #define Q14_SHIFT 14
@@ -44,9 +44,9 @@
 uint8_t filter_state = 0;
 
 volatile int16_t buffer[BUFFER_SIZE];           // Circular buffer
-volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
+//volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
 volatile uint16_t write_index = 0;              // Circular Buffer write pointer
-volatile uint16_t write_index_2 = 0;
+//volatile uint16_t write_index_2 = 0;
 volatile uint16_t read_index = 0;               // Buffer read pointer
 
 volatile uint8_t state = 0; //0: off, 1: recording, 2: filtering
@@ -73,10 +73,10 @@ void main(void)
     return;
 }
 
-
+// PRD to check state of dip switches called every 0.5 seconds
 void dipPRD(void)
 {
-//    startTime = CLK_gethtime();
+    // Get status of required DIP switches
     uint8_t dip_status1;
     uint8_t dip_status2;
     uint8_t dip_status6;
@@ -89,11 +89,7 @@ void dipPRD(void)
     DIP_get(DIP_7, &dip_status7);
     DIP_get(DIP_8, &dip_status8);
 
-//    endTime = CLK_gethtime();
-//    duration = endTime-startTime;
-//    LOG_printf(&trace, "Ticks: %d", duration);
-
-
+    // Set state and filter variables as defined by switch positions
     if(dip_status1)
     {
         if(dip_status2)
@@ -108,6 +104,7 @@ void dipPRD(void)
             {
                 filter_state &= ~LOW_MASK;
             }
+
             if(dip_status7)
             {
                 filter_state |= BP_MASK;
@@ -116,6 +113,7 @@ void dipPRD(void)
             {
                 filter_state &= ~BP_MASK;
             }
+
             if(dip_status8)
             {
                 filter_state |= HIGH_MASK;
@@ -124,6 +122,7 @@ void dipPRD(void)
             {
                 filter_state &= ~HIGH_MASK;
             }
+            // Toggle LED as required
             LED_toggle(LED_1);
         }
         else
@@ -137,8 +136,10 @@ void dipPRD(void)
     }
 }
 
+// LED PRD @ 20 Hz
 void ledPRD_20Hz(void)
 {
+    // Toggle both LEDs if in state 1 (recording)
     if (state == 1)
     {
         LED_toggle(LED_1);
@@ -146,16 +147,18 @@ void ledPRD_20Hz(void)
     }
 }
 
+// LED PRED @ 20 Hz
 void ledPRD_6Hz(void)
 {
-    if (state == 2 && filter_state > 0)  // At least one filter is active
+    // Toggle LED 2 if in state 2 and at least 1 filter is active
+    if (state == 2 && filter_state > 0)
     {
         LED_toggle(LED_2);
     }
+
 }
 
-
-//#pragma FUNCTION_OPTIONS(apply_biquad_filter_q14, "--opt_level=3")
+// Function to apply a single biquad to a signal
 int16_t apply_biquad_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int16_t gain, int16_t x)
 {
     // need to declare new vara which are 32 bit instead now
@@ -203,16 +206,18 @@ int16_t apply_sos_IIR_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, in
     return y;
 }
 
+// Filtering software interrupt
 void filterSWI0(void)  // SWI0
 {
     startTime = CLK_gethtime();
     if (state == 2)
     {
         filtered_sample = 0;
-        playback_sample = (float)buffer[read_index];
+        playback_sample = buffer[read_index];
 //        read_index = (read_index + 1) % BUFFER_SIZE;  // Wrap around if needed
-        read_index = (read_index + 1) & (BUFFER_SIZE-1);  // Wrap around if needed
+        read_index = (read_index + 1) & BUFFER_MOD;  // Wrap around if needed
 
+        // Apply filters as set by switches
          if (filter_state & LOW_MASK)
              filtered_sample += apply_sos_IIR_filter_q14(IIR_low_B, IIR_low_A, w_low, IIR_low_G, NUM_BIQUADS_LOW, playback_sample);
          if (filter_state&BP_MASK)
@@ -228,11 +233,12 @@ void filterSWI0(void)  // SWI0
     {
         buffer[write_index] = s16;
 //        write_index = (write_index + 1) % BUFFER_SIZE;
-        write_index = (write_index + 1) & (BUFFER_SIZE-1);
+        write_index = (write_index + 1) & BUFFER_MOD;
         write_audio_sample(s16);
     }
     else
     {
+        // Output no audio if in state 0
         write_audio_sample(0);
     }
 
@@ -242,9 +248,13 @@ void filterSWI0(void)  // SWI0
 }
 
 
+// Audio input hardware interrupt
 void audioHWI(void)
 {
+    // Read in the audio sample
     s16 = read_audio_sample();
+    // If left channel post software interrupt
+    // If right channel output nothing
     if (MCASP->RSLOT)
     {
         SWI_post(&SWI0);
@@ -255,3 +265,41 @@ void audioHWI(void)
     }
 }
 
+/**
+float apply_biquad_filter(float *b, float *a,  volatile float *w, float gain, volatile float x)
+{
+    x *= gain;
+    float w0 = x - a[1]*w[0] - a[2]*w[1];
+    float y = b[0]*w0 + b[1]*w[0] + b[2]*w[1];
+
+    w[1] = w[0];
+    w[0] = w0;
+//    y *= gain;
+    return y;
+}
+
+
+ * Where:
+ * - b is a (1xN*3) array of all coefficients
+ * - a is a (1xN*3) array of all coefficients
+ * - w is a (1xN*2) array of all stored w values
+ * - G is a (1xN) array of all gains
+ * - N is the total number of biquads in cascade
+ * - x is the input sample
+
+
+float apply_sos_IIR_filter(float *b, float *a,  volatile float *w, float *G, int N, volatile float x)
+{
+    int i;
+    float y;
+
+    for (i=0;i<N;i++)
+    {
+        y = apply_biquad_filter(b+(3*i), a+(3*i), w+(2*i), G[i], x);
+        x = y;
+    }
+
+    return y;
+}
+
+**/
