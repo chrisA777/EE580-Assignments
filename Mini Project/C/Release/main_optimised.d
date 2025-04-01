@@ -50,7 +50,7 @@ main_optimised.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/_hook.h
 main_optimised.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/log.h
 main_optimised.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/_log.h
 main_optimised.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/trc.h
-main_optimised.obj: ../data_sos.h
+main_optimised.obj: ../data_sos_q14.h
 main_optimised.obj: C:/ti/bios_5_42_01_09/packages/ti/bios/include/clk.h
 
 ../main_optimised.c:
@@ -153,7 +153,7 @@ C:/ti/bios_5_42_01_09/packages/ti/bios/include/_log.h:
 
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/trc.h:
 
-../data_sos.h:
+../data_sos_q14.h:
 
 C:/ti/bios_5_42_01_09/packages/ti/bios/include/clk.h:
 

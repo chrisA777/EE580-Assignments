@@ -5,7 +5,7 @@
 ;; INPUT main.cdb
 
 ;; CONFIGURATION/VERSION INFORMATION
-	.asg "Mon Mar 31 23:24:10 2025", VERS$DATE
+	.asg "Tue Apr 01 00:10:47 2025", VERS$DATE
 
 ;; PROLOGUE
 	.include maincfg.h62

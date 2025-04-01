@@ -10,7 +10,7 @@
 #include "framework.h"
 #include "maincfg.h"
 //#include "data.h"
-//#include "data_sos.h"
+//#include "data_sos_v2.h"
 #include "data_sos_q14.h"
 #include "clk.h"
 
@@ -44,9 +44,9 @@
 uint8_t filter_state = 0;
 
 volatile int16_t buffer[BUFFER_SIZE];           // Circular buffer
-volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
+//volatile int16_t filtered_buffer[BUFFER_SIZE_2];  // Buffer for filtered outputs
 volatile uint16_t write_index = 0;              // Circular Buffer write pointer
-volatile uint16_t write_index_2 = 0;
+//volatile uint16_t write_index_2 = 0;
 volatile uint16_t read_index = 0;               // Buffer read pointer
 
 volatile uint8_t state = 0; //0: off, 1: recording, 2: filtering
@@ -159,7 +159,6 @@ void ledPRD_6Hz(void)
 }
 
 // Function to apply a single biquad to a signal
-//#pragma FUNCTION_OPTIONS(apply_biquad_filter_q14, "--opt_level=3")
 int16_t apply_biquad_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int16_t gain, int16_t x)
 {
     // need to declare new vara which are 32 bit instead now
@@ -197,15 +196,12 @@ int16_t apply_biquad_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int
 * - N is the total number of biquads in cascade
 * - x is the input sample
 */
-//#pragma FUNCTION_OPTIONS(apply_sos_IIR_filter_q14, "--opt_level=3")
 int16_t apply_sos_IIR_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int16_t *G, int N, int16_t x)
 {
     uint16_t i,j,k;
     int16_t y = 0;
-    #pragma UNROLL(8)
-    #pragma MUST_ITERATE(7, 8, 1)
-    //#pragma LOOP_COUNT(7, 8, 1)
-    //#pragma IVDEP
+//    #pragma UNROLL(8)
+//    #pragma MUST_ITERATE(7, 8, 1)
     for (i = j = k = 0; i < N; i++, j+=3, k+=2)
     {
         y = apply_biquad_filter_q14(b + j, a + j, w + k, G[i], x);
@@ -234,8 +230,8 @@ void filterSWI0(void)  // SWI0
          if (filter_state&HIGH_MASK)
              filtered_sample += apply_sos_IIR_filter_q14(IIR_high_B, IIR_high_A, w_high, IIR_high_G, NUM_BIQUADS_HIGH, playback_sample);
 
-        filtered_buffer[write_index_2] = (int16_t)filtered_sample;
-        write_index_2 = (write_index_2 + 1) & BUFFER_SIZE_2;
+//        filtered_buffer[write_index_2] = (int16_t)filtered_sample;
+//        write_index_2 = (write_index_2 + 1) & BUFFER_SIZE_2;
         write_audio_sample(filtered_sample);
     }
     else if (state == 1)
