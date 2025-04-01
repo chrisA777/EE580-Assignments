@@ -186,6 +186,7 @@ int16_t apply_biquad_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int
 
 // Stays the same
 //#pragma FUNCTION_OPTIONS(apply_sos_IIR_filter_q14, "--opt_level=3")
+//#pragma FUNC_ALWAYS_INLINE(apply_sos_IIR_filter_q14)
 int16_t apply_sos_IIR_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, int16_t *G, int N, int16_t x)
 {
     uint16_t i,j,k;
@@ -193,7 +194,6 @@ int16_t apply_sos_IIR_filter_q14(int16_t *b, int16_t *a, volatile int32_t *w, in
     #pragma UNROLL(8)
     #pragma MUST_ITERATE(7, 8, 1)
     //#pragma LOOP_COUNT(7, 8, 1)
-    //#pragma IVDEP
     for (i = j = k = 0; i < N; i++, j+=3, k+=2)
     {
         y = apply_biquad_filter_q14(b + j, a + j, w + k, G[i], x);

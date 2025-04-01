@@ -124,6 +124,8 @@ bios.PRD.instance("dip").period = 500;
 bios.SWI.instance("SWI2").order = 5;
 bios.SWI.instance("SWI1").destroy();
 bios.SWI.instance("SWI2").destroy();
+bios.MEM.STACKSIZE = 0x1000;
+bios.MEM.STACKSIZE = 0x2000;
 // !GRAPHICAL_CONFIG_TOOL_SCRIPT_INSERT_POINT!
 
 if (config.hasReportedError == false) {
